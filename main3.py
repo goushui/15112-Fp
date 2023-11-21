@@ -1,10 +1,15 @@
 from cmu_graphics import *
 import math
+import random
 
 
 """
 Why is my game laggy?
 
+
+to
+- make freeze lazers blue
+make more dmg lazers wideer
 
 
 citations:
@@ -69,9 +74,9 @@ class lazers:
         self.lazers = []
         self.dmg = 50
         self.color = "red"
-        self.width = 1
+        self.width = 2
         self.speed = 10
-        self.cooldown = 0
+        self.cD = 20
 
 class icons:
 
@@ -87,18 +92,61 @@ class charUpgrades:
     def __init__(self):
 
         self.list = [True, False, False, False, False, False]
+        self.Objects = [app.freezingLazers1, app.lazerDmg1, app.lazerAttackSpeed1, app.fasterMS1, app.increaseHP1, app.dash1]
 
+        self.fourUpgrades
 
 class freezingLazers(charUpgrades):
         
     def __init__(self):
         self.bossSpeedMultiplier = 1
-        self.bossSlownessCD = 0
+        self.bossFreezeCD = 0
 
+        self.setnBossSpeedMultiplier = 1
+        self.setBossFreezeCD = 20
 
+        self.line1 = "lazers freeze"
+        self.line2 = "the enemy"
 
+class lazerDmg(charUpgrades):
+        
+    def __init__(self):
+        self.dmgMultiplier = 1.2
 
+        self.line1 = "lazers do"
+        self.line2 = "more damage"
 
+class lazerAttackSpeed(charUpgrades):
+        
+    def __init__(self):
+        self.lazerAttackintervalMuliplier = 0.9
+
+        self.line1 = "lazer cooldown"
+        self.line2 = "is shorter"
+
+class fasterMS(charUpgrades):
+        
+    def __init__(self):
+        self.speedMuliplier = 1.2
+
+        self.line1 = "character moves"
+        self.line2 = "faster"
+
+class increaseHP(charUpgrades):
+
+    def __init__(self):
+        self.hpMuliplier = 2
+
+        self.line1 = "character gains"
+        self.line2 = "more HP"
+
+class dash(charUpgrades):
+
+    def __init__(self):
+        self.distance = 30
+
+        self.line1 = "character gains a "
+        self.line2 = "short dash ability"
 #==============================================================================
 #==============================================================================
 #START
@@ -123,7 +171,13 @@ def reset(app):
     #CHAR Upgrades
     if True:
         app.charUpgrades1 = charUpgrades()
-        app.freezingLazers = freezingLazers()
+
+        app.freezingLazers1 = freezingLazers()
+        app.lazerDmg1 = lazerDmg()
+        app.lazerAttackSpeed1 = lazerAttackSpeed()
+        app.fasterMS1 = fasterMS()
+        app.increaseHP1 = increaseHP()
+        app.dash1 = dash()
     
     app.stepPerSecond = 30
     app.time = 0
@@ -165,7 +219,7 @@ def redrawAll(app):
         drawBossHealthbar(app)
 
     if app.lazers1.lazers:
-        drawLazers(app)
+        drawLasers(app)
 
     #game over screen
     if app.situation == 1:
@@ -211,15 +265,15 @@ def drawCharacter(app):
     drawCircle(app.character1.x, app.character1.y, app.character1.size)
 
 #LAZERS   
-def drawLazers(app):
+def drawLasers(app):
     for lazer in app.lazers1.lazers:
-        lazerXStart = lazer[0] - math.cos(lazer[2]) * 3
-        lazerYStart = lazer[1] + math.sin(lazer[2]) * 3
+        lazerXStart = lazer[0] - math.cos(lazer[2]) * 7
+        lazerYStart = lazer[1] + math.sin(lazer[2]) * 7
         
-        lazerXEnd = lazer[0] + math.cos(lazer[2]) * 3
-        lazerYEnd = lazer[1] - math.sin(lazer[2]) * 3
+        lazerXEnd = lazer[0] + math.cos(lazer[2]) * 7
+        lazerYEnd = lazer[1] - math.sin(lazer[2]) * 7
         
-        drawLine(lazerXStart, lazerYStart, lazerXEnd, lazerYEnd, fill = app.lazers1.color)
+        drawLine(lazerXStart, lazerYStart, lazerXEnd, lazerYEnd, fill = app.lazers1.color, lineWidth = app.lazers1.width)
 
 #drawBoss
 def drawBoss(app):
@@ -282,13 +336,16 @@ def drawUpgradeSelector(app):
     startX = app.width/2 - gapWidth * 1.5 - rectWidth * 1.5
 
     for i in range(4):
-        drawRect(startX + i * (gapWidth + rectWidth), app.height/2, rectWidth, rectHeight, align = "center")
 
-        drawCharUpgrades(app)
+        addToStartX = i * (gapWidth + rectWidth)
+        drawRect(startX + addToStartX, app.height/2, rectWidth, rectHeight, align = "center", fill = "grey")
+
+        drawCharUpgrades(app, addToStartX)
 
 def drawCharUpgrades(app):
-    pass
 
+    
+    drawLabel()
 
 #==============================================================================
 #==============================================================================
@@ -303,8 +360,8 @@ def onKeyPress(app, key):
             app.situation = 0
 
     #lazers
-    if key == 'q' and app.lazers1.cooldown == 0:
-        app.lazers1.cooldown = 10
+    if key == 'q' and app.lazers1.cD == 0:
+        app.lazers1.cooldown = app.lazers1.cD
         app.lazers1.lazers.append([app.character1.x, app.character1.y, app.character1.targetAngle])
 
 def onMousePress(app, mouseX, mouseY, button):
@@ -385,11 +442,11 @@ def onStep(app):
 #decreases ability cooldowns
 def abilityCooldowns(app):
 
-    if app.lazers1.cooldown > 0:
-        app.lazers1.cooldown -= 1
+    if app.lazers1.cD > 0:
+        app.lazers1.cD -= 1
 
-    if app.freezingLazers.bossSlownessCD > 0:
-        app.freezingLazers.bossSlownessCD -= 1
+    if app.freezingLazers1.bossFreezeCD > 0:
+        app.freezingLazers1.bossFreezeCD -= 1
 
 #finds the distance between where the chracter is moving to and the character and checks that it is higher then the chracter speed
 def characterMove(app):
@@ -430,8 +487,8 @@ def moveLazers(app):
         if app.boss1.health and distance(app, app.boss1.x, app.boss1.y, app.lazers1.lazers[i][0], app.lazers1.lazers[i][1]) < app.boss1.size:
             #checks for freezin lazer
             if app.charUpgrades1.list[0]:
-                app.freezingLazers.bossSpeedMultiplier = 0
-                app.freezingLazers.bossSlownessCD = 20
+                app.freezingLazers1.bossSpeedMultiplier = app.freezingLazers1.bossSpeedMultiplier
+                app.freezingLazers1.bossFreezeCD = app.freezingLazers1.setBossFreezeCD 
 
             #does damage
             app.boss1.health -= app.lazers1.dmg
@@ -460,9 +517,9 @@ def bossMove(app):
         bossYVelocity = -verticalLength/hypotenuse * app.boss1.speed
 
         #freezing lasers
-        if app.freezingLazers.bossSlownessCD > 0:
-            bossXVelocity *= app.freezingLazers.bossSpeedMultiplier
-            bossYVelocity *= app.freezingLazers.bossSpeedMultiplier
+        if app.freezingLazers1.bossFreezeCD > 0:
+            bossXVelocity *= app.freezingLazers1.bossSpeedMultiplier
+            bossYVelocity *= app.freezingLazers1.bossSpeedMultiplier
         
         bossRightVelocity = bossXVelocity
         bossDownVelocity = -bossYVelocity
@@ -494,6 +551,10 @@ def checkBossDead(app):
         app.boss1.respawnTimer = 200   
         app.character1.kills += 1    
         app.situation = 2
+
+def get4Upgrades(app):
+
+    index = random.randint(3, 9)
 
 #=======================================
 #GENERAL HELPER FUNTIONS
