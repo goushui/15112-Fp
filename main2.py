@@ -8,6 +8,13 @@ import math
 #==============================================================================
 #==============================================================================
 
+class map:
+
+    def __init__(self):
+
+        self.dx = 0
+        self.dy = 0
+
 class boss:
 
     def __init__(self):
@@ -31,6 +38,8 @@ class character:
         self.health = 100
         self.x = 0
         self.y = 0
+        self.dx = 0
+        self.dy = 0
         self.size = 10
 
         #direction
@@ -50,7 +59,7 @@ class lazers:
         self.dmg = 5
         self.color = "red"
         self.width = 1
-        self.speed = 2
+        self.speed = 10
         self.cooldown = 0
 
 class icons:
@@ -78,8 +87,11 @@ def onAppStart(app):
     
 def reset(app):
 
+    app.map1 = map()
     app.boss1 = boss()
     app.character1 = character()
+    app.character1.x = app.width/2
+    app.character1.y = app.gameHeight/2
     app.lazers1 = lazers()
     
     app.stepPerSecond = 30
@@ -94,13 +106,13 @@ def reset(app):
         app.character1.x = app.width/2
         app.character1.y = app.gameHeight/2
         
-        #LAZERS
-        app.lazers = []
+    #LAZERS
+    app.lazers = []
 
-def resetBoss(app):
-    app.boss1.x = 0
-    app.boss1.y = 0
-    app.boss1.health = app.boss1.totalHealth
+# def resetBoss(app):
+#     app.boss1.x = 0
+#     app.boss1.y = 0
+#     app.boss1.health = app.boss1.totalHealth
     
 #=======================================
 #MODEL HELPER FUNTIONS
@@ -117,16 +129,9 @@ def redrawAll(app):
     drawMap(app)
     drawBotBar(app)
 
-    drawCharacterHealthbar(app)
+    drawCharacterHealthBar(app)
     if app.character1.health:
         drawCharacter(app)
-
-    if app.boss1.health:
-        drawBoss(app)
-        drawBossHealthbar(app)
-
-    if app.lazers1.lazers:
-        drawLazers(app)
 
     if app.ending == 1:
         drawEnding1(app)
@@ -141,11 +146,11 @@ def redrawAll(app):
 
 #DRAWING MAP
 def drawMap(app):
-    drawRect(0, 0, app.width, app.gameHeight, fill = 'black', opacity = 70)
-    drawRect(0, 300, app.width, 40, fill = 'black')
-    drawRect(0, 300, app.width, 40, fill = 'white', opacity = 50)
-    drawRect(400, 0, 40, app.gameHeight, fill = 'black')
-    drawRect(400, 0, 40, app.gameHeight, fill = 'white', opacity = 50)
+    drawRect(app.map1.dx + 0, app.map1.dy + 0, app.width, app.gameHeight, fill = 'black', opacity = 70)
+    drawRect(app.map1.dx + 0, app.map1.dy + 300, app.width, 40, fill = 'black')
+    drawRect(app.map1.dx + 0, app.map1.dy + 300, app.width, 40, fill = 'white', opacity = 50)
+    drawRect(app.map1.dx + 400, app.map1.dy + 0, 40, app.gameHeight, fill = 'black')
+    drawRect(app.map1.dx + 400, app.map1.dy + 0, 40, app.gameHeight, fill = 'white', opacity = 50)
 
 #DRAWING Bottom Bar
 def drawBotBar(app):
@@ -165,45 +170,9 @@ def pauseScreen(app):
 def drawCharacter(app):
     drawCircle(app.character1.x, app.character1.y, app.character1.size)
 
-#LAZERS   
-def drawLazers(app):
-    for lazer in app.lazers1.lazers:
-        lazerXStart = lazer[0] - math.cos(lazer[2]) * 3
-        lazerYStart = lazer[1] + math.sin(lazer[2]) * 3
-        
-        lazerXEnd = lazer[0] + math.cos(lazer[2]) * 3
-        lazerYEnd = lazer[1] - math.sin(lazer[2]) * 3
-        
-        drawLine(lazerXStart, lazerYStart, lazerXEnd, lazerYEnd, fill = app.lazers1.color)
 
-#drawBoss
-def drawBoss(app):
-    drawCircle(app.boss1.x, app.boss1.y, app.boss1.size, align = 'center', fill = app.boss1.color)
-    
-#boss healthbar
-def drawBossHealthbar(app):
-
-    healthBarSize = 800
-    border = 4
-    
-    drawRect(app.width/2, 40, healthBarSize + border, 30 + border, align = 'center', border = 'black', borderWidth = 100)
-    
-    rectWidth = healthBarSize/app.boss1.totalHealth
-    startX = app.width/2-healthBarSize/2+rectWidth/2
-    
-    for i in range(app.boss1.totalHealth):
-        
-        if i < app.boss1.health:
-            color = 'red'
-        elif i >= app.boss1.health:
-            color = rgb(200, 200, 200)
-        
-        drawRect(startX + i*rectWidth, 40, rectWidth, 30, align = 'center', fill = color)
-        
-    drawLabel(f'{app.boss1.health} / {app.boss1.totalHealth}', app.width/2, 40, size = 20)
-
-#character heal;thbar
-def drawCharacterHealthbar(app):
+#character health bar
+def drawCharacterHealthBar(app):
 
     healthBarSize = 500
     leftMargin = 40
@@ -236,11 +205,6 @@ def onKeyPress(app, key):
     if key == 'p':
         app.paused = not(app.paused)
 
-    #lazers
-    if key == 'q' and app.lazers1.cooldown == 0:
-        app.lazers1.cooldown = 10
-        app.lazers1.lazers.append([app.character1.x, app.character1.y, app.character1.targetAngle])
-
 
 def onMousePress(app, mouseX, mouseY, button):
     
@@ -249,7 +213,7 @@ def onMousePress(app, mouseX, mouseY, button):
 
 def setMoveTo(app, mouseX, mouseY):
 
-    app.character1.moveToCoords = mouseX, mouseY
+    app.character1.moveToCoords = [mouseX, mouseY]
 
     deltaX = mouseX - app.character1.x
     deltaY = -(mouseY - app.character1.y)
@@ -266,28 +230,6 @@ def setMoveTo(app, mouseX, mouseY):
 #Mouse Move
 #=======================================  
 
-def onMouseMove(app, mouseX, mouseY):
-    setTarget(app, mouseX, mouseY)
-
-def setTarget(app, mouseX, mouseY):
-
-    app.targetCoords = mouseX, mouseY
-
-    deltaX = mouseX - app.character1.x
-    deltaY = -(mouseY - app.character1.y)
-
-    hypotenuse = pythagoreanTheorem(deltaX, deltaY)
-    
-    if deltaX >= 0:
-        app.character1.targetAngle = math.asin(deltaY/hypotenuse)
-    else:
-        app.character1.targetAngle = math.pi - math.asin(deltaY/hypotenuse)
-
-#def onKeyHold(app, keys):
-
-        
-# def onKeyRelease(app, key):
-    
 
 #=======================================
 #onStep
@@ -300,100 +242,33 @@ def onStep(app):
     else:
         
         app.time += 1
-        abilityCooldowns(app)
 
         if app.character1.moveToCoords:
-            moveCharacter(app)
-
-        if len(app.lazers1.lazers) > 0:
-            moveLazers(app)
-
-        #SPAWNS BOSS AT TIME = 300
-        if app.boss1.health == 0:
-            app.boss1.respawnTimer -= 1
-            if app.boss1.respawnTimer == 0:
-                resetBoss(app)
-
-        if app.boss1.health:
-            bossMove(app)
-
-#decreases ability cooldowns
-def abilityCooldowns(app):
-
-    if app.lazers1.cooldown > 0:
-        app.lazers1.cooldown -= 1
+            characterMove(app)
+            moveEverything(app)
 
 
-def moveCharacter(app):
+def characterMove(app):
 
-    x, y = app.character1.moveToCoords
+    #finds the distance between where the chracter is moving to and the character and checks that it is higher then the chracter speed
+    #if greater then the speed the it sets the dx and dy values and decreases the moveTo Values
+    #else it sets move to coords to the coords of the character
+    if distance(app, app.character1.x, app.character1.y, app.character1.moveToCoords[0], app.character1.moveToCoords[1]) > app.character1.speed:
 
-    if distance(app, app.character1.x, app.character1.y, x, y) > app.character1.speed:
+        app.character1.dx = (app.character1.speed * math.cos(app.character1.moveToAngle))
+        app.character1.dy = -(app.character1.speed * math.sin(app.character1.moveToAngle))
 
-        app.character1.x += (app.character1.speed * math.cos(app.character1.moveToAngle))
-        app.character1.y += -(app.character1.speed * math.sin(app.character1.moveToAngle))
+        app.character1.moveToCoords[0] -= app.character1.dx
+        app.character1.moveToCoords[1] -= app.character1.dy
+
     else:
-        app.character1.x = x
-        app.character1.y = y
+        app.character1.moveToCoords[0], app.character1.moveToCoords[1] = app.character1.x, app.character1.y
 
-#loops through all the lazers and moves them
-#checks if any lazers collide with the boss and deals damage to the boss if so
-def moveLazers(app):
-    i = 0
-    while i < len(app.lazers1.lazers):
-        app.lazers1.lazers[i][0] = app.lazers1.lazers[i][0] + math.cos(app.lazers1.lazers[i][2]) * 10
-        app.lazers1.lazers[i][1] = app.lazers1.lazers[i][1] - math.sin(app.lazers1.lazers[i][2]) * 10
-        
-        #if lazer hits boss
-        if app.boss1.health and distance(app, app.boss1.x, app.boss1.y, app.lazers1.lazers[i][0], app.lazers1.lazers[i][1]) < app.boss1.size:
-            app.boss1.health -= app.lazers1.dmg
-            app.lazers1.lazers.pop(i)
-            checkBossDead(app)
-        
-        #delete lazer if out of bounds
-        elif app.lazers1.lazers[i][0]>app.width or app.lazers1.lazers[i][0] < 0:
-            app.lazers1.lazers.pop(i)
-        elif app.lazers1.lazers[i][1]>app.gameHeight or app.lazers1.lazers[i][1] < 0:
-            app.lazers1.lazers.pop(i)
-        else:
-            i+=1
+def moveEverything(app):
+    if distance(app, app.character1.x, app.character1.y, app.character1.moveToCoords[0], app.character1.moveToCoords[1]) != 0:
+        app.map1.dx -= app.character1.dx
+        app.map1.dy -= app.character1.dy
 
-#moves the boss towards the character onStep
-def bossMove(app):
-    
-    if app.boss1.health:
-    
-        verticalLength = (app.character1.y-app.boss1.y)
-        horizontalLength = (app.character1.x-app.boss1.x) 
-        hypotenuse = pythagoreanTheorem((app.character1.x-app.boss1.x), (app.character1.y-app.boss1.y))
-        
-        bossXVelocity = horizontalLength/hypotenuse * app.boss1.speed
-        bossYVelocity = -verticalLength/hypotenuse * app.boss1.speed
-        
-        bossRightVelocity = bossXVelocity
-        bossDownVelocity = -bossYVelocity
-        
-        app.boss1.x += bossRightVelocity
-        app.boss1.y += bossDownVelocity
-        
-        bossAttack(app)
-
-#checks if boss is in range to do a melee attack 
-def bossAttack(app):
-    if distance(app, app.boss1.x, app.boss1.y, app.character1.x, app.character1.y) < app.boss1.size:
-        app.character1.health -= app.boss1.meleeDmg
-        checkCharacterDead(app)
-
-def checkCharacterDead(app):
-    if app.character1.health <= 0:
-        app.character1.health = 0
-        app.ending = 1
-
-def checkBossDead(app):
-    if app.boss1.health <= 0:
-        app.boss1.health = 0
-        app.boss1.respawnTimer = 200   
-        app.character1.kills += 1     
 
 
 #=======================================

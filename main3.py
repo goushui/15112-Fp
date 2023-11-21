@@ -8,6 +8,12 @@ import math
 #==============================================================================
 #==============================================================================
 
+class map:
+
+    def __init__(self):
+        self.dx = 0
+        self.dy = 0
+
 class boss:
 
     def __init__(self):
@@ -31,7 +37,10 @@ class character:
         self.health = 100
         self.x = 0
         self.y = 0
+        self.dx = 0
+        self.dy = 0
         self.size = 10
+        self.isMoving = False
 
         #direction
         self.moveToCoords = None
@@ -50,7 +59,7 @@ class lazers:
         self.dmg = 5
         self.color = "red"
         self.width = 1
-        self.speed = 2
+        self.speed = 10
         self.cooldown = 0
 
 class icons:
@@ -81,6 +90,7 @@ def reset(app):
     app.boss1 = boss()
     app.character1 = character()
     app.lazers1 = lazers()
+    app.map1 = map()
     
     app.stepPerSecond = 30
     app.paused = True
@@ -141,17 +151,17 @@ def redrawAll(app):
 
 #DRAWING MAP
 def drawMap(app):
-    drawRect(0, 0, app.width, app.gameHeight, fill = 'black', opacity = 70)
-    drawRect(0, 300, app.width, 40, fill = 'black')
-    drawRect(0, 300, app.width, 40, fill = 'white', opacity = 50)
-    drawRect(400, 0, 40, app.gameHeight, fill = 'black')
-    drawRect(400, 0, 40, app.gameHeight, fill = 'white', opacity = 50)
+    drawRect(app.map1.dx + 0, app.map1.dy + 0, 2000, 2000, fill = 'black', opacity = 70)
+    drawRect(app.map1.dx + 0, app.map1.dy + 300, app.width, 40, fill = 'black')
+    drawRect(app.map1.dx + 0, app.map1.dy + 300, app.width, 40, fill = 'white', opacity = 50)
+    drawRect(app.map1.dx + 400, app.map1.dy + 0, 40, app.gameHeight, fill = 'black')
+    drawRect(app.map1.dx + 400, app.map1.dy + 0, 40, app.gameHeight, fill = 'white', opacity = 50)
 
 #DRAWING Bottom Bar
 def drawBotBar(app):
     drawRect(0, app.gameHeight, app.width, app.height - app.gameHeight, fill = 'black', opacity = 100)
 
-#ENFING 1 SCREEN
+#ENDING 1 SCREEN
 def drawEnding1(app):
     drawRect(0, 0, app.width, app.height, fill = 'black', opacity = 40)
     drawLabel('GAME OVER', app.width/2, app.height/2-130, size = 40, bold = True, fill = "cyan")
@@ -162,6 +172,7 @@ def pauseScreen(app):
     drawRect(0, 0, app.width, app.height, fill = 'black', opacity = 40)
     drawLabel('GAME IS PAUSED', app.width/2, app.height/2-100, size = 40, bold = True)
 
+#DRAWS CHRACTER
 def drawCharacter(app):
     drawCircle(app.character1.x, app.character1.y, app.character1.size)
 
@@ -241,7 +252,6 @@ def onKeyPress(app, key):
         app.lazers1.cooldown = 10
         app.lazers1.lazers.append([app.character1.x, app.character1.y, app.character1.targetAngle])
 
-
 def onMousePress(app, mouseX, mouseY, button):
     
     if button == 2:
@@ -249,7 +259,8 @@ def onMousePress(app, mouseX, mouseY, button):
 
 def setMoveTo(app, mouseX, mouseY):
 
-    app.character1.moveToCoords = mouseX, mouseY
+    app.character1.isMoving = True
+    app.character1.moveToCoords = [mouseX, mouseY]
 
     deltaX = mouseX - app.character1.x
     deltaY = -(mouseY - app.character1.y)
@@ -258,7 +269,6 @@ def setMoveTo(app, mouseX, mouseY):
     
     if deltaX >= 0:
         app.character1.moveToAngle = math.asin(deltaY/hypotenuse)
-
     else:
         app.character1.moveToAngle = math.pi - math.asin(deltaY/hypotenuse)
         
@@ -283,11 +293,6 @@ def setTarget(app, mouseX, mouseY):
     else:
         app.character1.targetAngle = math.pi - math.asin(deltaY/hypotenuse)
 
-#def onKeyHold(app, keys):
-
-        
-# def onKeyRelease(app, key):
-    
 
 #=======================================
 #onStep
@@ -302,8 +307,9 @@ def onStep(app):
         app.time += 1
         abilityCooldowns(app)
 
-        if app.character1.moveToCoords:
-            moveCharacter(app)
+        if app.character1.isMoving:
+            characterMove(app)
+            moveMap(app)
 
         if len(app.lazers1.lazers) > 0:
             moveLazers(app)
@@ -323,26 +329,41 @@ def abilityCooldowns(app):
     if app.lazers1.cooldown > 0:
         app.lazers1.cooldown -= 1
 
+def characterMove(app):
 
-def moveCharacter(app):
+    #finds the distance between where the chracter is moving to and the character and checks that it is higher then the chracter speed
+    #if greater then the speed the it sets the dx and dy values and decreases the moveTo Values
+    #else it sets move to coords to the coords of the character
+    if distance(app, app.character1.x, app.character1.y, app.character1.moveToCoords[0], app.character1.moveToCoords[1]) > app.character1.speed:
 
-    x, y = app.character1.moveToCoords
+        app.character1.dx = (app.character1.speed * math.cos(app.character1.moveToAngle))
+        app.character1.dy = -(app.character1.speed * math.sin(app.character1.moveToAngle))
 
-    if distance(app, app.character1.x, app.character1.y, x, y) > app.character1.speed:
+        app.character1.moveToCoords[0] -= app.character1.dx
+        app.character1.moveToCoords[1] -= app.character1.dy
 
-        app.character1.x += (app.character1.speed * math.cos(app.character1.moveToAngle))
-        app.character1.y += -(app.character1.speed * math.sin(app.character1.moveToAngle))
     else:
-        app.character1.x = x
-        app.character1.y = y
+        app.character1.moveToCoords[0], app.character1.moveToCoords[1] = app.character1.x, app.character1.y
+        app.character1.isMoving = False
+
+def moveMap(app):
+    if app.character1.isMoving:
+        app.map1.dx -= app.character1.dx
+        app.map1.dy -= app.character1.dy
+
 
 #loops through all the lazers and moves them
 #checks if any lazers collide with the boss and deals damage to the boss if so
 def moveLazers(app):
     i = 0
     while i < len(app.lazers1.lazers):
-        app.lazers1.lazers[i][0] = app.lazers1.lazers[i][0] + math.cos(app.lazers1.lazers[i][2]) * 10
-        app.lazers1.lazers[i][1] = app.lazers1.lazers[i][1] - math.sin(app.lazers1.lazers[i][2]) * 10
+        app.lazers1.lazers[i][0] = app.lazers1.lazers[i][0] + math.cos(app.lazers1.lazers[i][2]) * app.lazers1.speed
+        app.lazers1.lazers[i][1] = app.lazers1.lazers[i][1] - math.sin(app.lazers1.lazers[i][2]) * app.lazers1.speed
+
+        #frameshift lazers
+        if app.character1.isMoving:
+            app.lazers1.lazers[i][0] -= app.character1.dx
+            app.lazers1.lazers[i][1] -= app.character1.dy
         
         #if lazer hits boss
         if app.boss1.health and distance(app, app.boss1.x, app.boss1.y, app.lazers1.lazers[i][0], app.lazers1.lazers[i][1]) < app.boss1.size:
@@ -375,6 +396,11 @@ def bossMove(app):
         
         app.boss1.x += bossRightVelocity
         app.boss1.y += bossDownVelocity
+
+        #frameShift Boss
+        if app.character1.isMoving:
+            app.boss1.x -= app.character1.dx
+            app.boss1.y -= app.character1.dy
         
         bossAttack(app)
 
