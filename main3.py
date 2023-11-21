@@ -3,9 +3,12 @@ import math
 
 
 """
-Why is my game laggy
+Why is my game laggy?
 
 
+
+citations:
+- framseshift got the idea of moving all the things on the screen from 2022 page
 """
 
 
@@ -34,6 +37,7 @@ class boss:
         self.size = 40
         self.color = "purple"
         self.respawnTimer = 200
+        self.slowness = 0
 
 class character:
 
@@ -78,6 +82,23 @@ class icons:
         self.timer = None
         
 
+class charUpgrades:
+
+    def __init__(self):
+
+        self.list = [True, False, False, False, False, False]
+
+
+class freezingLazers(charUpgrades):
+        
+    def __init__(self):
+        self.bossSpeedMultiplier = 1
+        self.bossSlownessCD = 0
+
+
+
+
+
 #==============================================================================
 #==============================================================================
 #START
@@ -98,20 +119,22 @@ def reset(app):
     app.character1 = character()
     app.lazers1 = lazers()
     app.map1 = map()
+
+    #CHAR Upgrades
+    if True:
+        app.charUpgrades1 = charUpgrades()
+        app.freezingLazers = freezingLazers()
     
     app.stepPerSecond = 30
     app.time = 0
     
     app.situation = 0
-
     
     #CHAR VARIABLES
     if True:
         app.character1.x = app.width/2
         app.character1.y = app.gameHeight/2
-        
-        #LAZERS
-        app.lazers = []
+
 
 def resetBoss(app):
     app.boss1.x = 0
@@ -260,6 +283,13 @@ def drawUpgradeSelector(app):
 
     for i in range(4):
         drawRect(startX + i * (gapWidth + rectWidth), app.height/2, rectWidth, rectHeight, align = "center")
+
+        drawCharUpgrades(app)
+
+def drawCharUpgrades(app):
+    pass
+
+
 #==============================================================================
 #==============================================================================
 #CONTROLLERS
@@ -351,11 +381,15 @@ def onStep(app):
         if app.boss1.health:
             bossMove(app)
 
+
 #decreases ability cooldowns
 def abilityCooldowns(app):
 
     if app.lazers1.cooldown > 0:
         app.lazers1.cooldown -= 1
+
+    if app.freezingLazers.bossSlownessCD > 0:
+        app.freezingLazers.bossSlownessCD -= 1
 
 #finds the distance between where the chracter is moving to and the character and checks that it is higher then the chracter speed
 def characterMove(app):
@@ -394,6 +428,12 @@ def moveLazers(app):
         
         #if lazer hits boss
         if app.boss1.health and distance(app, app.boss1.x, app.boss1.y, app.lazers1.lazers[i][0], app.lazers1.lazers[i][1]) < app.boss1.size:
+            #checks for freezin lazer
+            if app.charUpgrades1.list[0]:
+                app.freezingLazers.bossSpeedMultiplier = 0
+                app.freezingLazers.bossSlownessCD = 20
+
+            #does damage
             app.boss1.health -= app.lazers1.dmg
             app.lazers1.lazers.pop(i)
             checkBossDead(app)
@@ -406,6 +446,7 @@ def moveLazers(app):
         else:
             i+=1
 
+
 #moves the boss towards the character onStep
 def bossMove(app):
     
@@ -417,6 +458,11 @@ def bossMove(app):
         
         bossXVelocity = horizontalLength/hypotenuse * app.boss1.speed
         bossYVelocity = -verticalLength/hypotenuse * app.boss1.speed
+
+        #freezing lasers
+        if app.freezingLazers.bossSlownessCD > 0:
+            bossXVelocity *= app.freezingLazers.bossSpeedMultiplier
+            bossYVelocity *= app.freezingLazers.bossSpeedMultiplier
         
         bossRightVelocity = bossXVelocity
         bossDownVelocity = -bossYVelocity
