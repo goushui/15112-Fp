@@ -31,6 +31,8 @@ class character:
         self.health = 100
         self.x = 0
         self.y = 0
+        self.dx
+        self.dy
         self.size = 10
 
         #direction
@@ -50,7 +52,7 @@ class lazers:
         self.dmg = 5
         self.color = "red"
         self.width = 1
-        self.speed = 2
+        self.speed = 10
         self.cooldown = 0
 
 class icons:
@@ -324,25 +326,41 @@ def abilityCooldowns(app):
         app.lazers1.cooldown -= 1
 
 
+# def moveCharacter(app):
+
+#     x, y = app.character1.moveToCoords
+
+#     if distance(app, app.character1.x, app.character1.y, x, y) > app.character1.speed:
+
+#         app.character1.x += (app.character1.speed * math.cos(app.character1.moveToAngle))
+#         app.character1.y += -(app.character1.speed * math.sin(app.character1.moveToAngle))
+#     else:
+#         app.character1.x = x
+#         app.character1.y = y
+
 def moveCharacter(app):
 
     x, y = app.character1.moveToCoords
 
     if distance(app, app.character1.x, app.character1.y, x, y) > app.character1.speed:
 
-        app.character1.x += (app.character1.speed * math.cos(app.character1.moveToAngle))
-        app.character1.y += -(app.character1.speed * math.sin(app.character1.moveToAngle))
+        app.character1.dx = (app.character1.speed * math.cos(app.character1.moveToAngle))
+        app.character1.dy += -(app.character1.speed * math.sin(app.character1.moveToAngle))
     else:
-        app.character1.x = x
-        app.character1.y = y
+        app.character1.dx = x
+        app.character1.dy = y
+
+def moveEverything(app):
+    pass
+
 
 #loops through all the lazers and moves them
 #checks if any lazers collide with the boss and deals damage to the boss if so
 def moveLazers(app):
     i = 0
     while i < len(app.lazers1.lazers):
-        app.lazers1.lazers[i][0] = app.lazers1.lazers[i][0] + math.cos(app.lazers1.lazers[i][2]) * 10
-        app.lazers1.lazers[i][1] = app.lazers1.lazers[i][1] - math.sin(app.lazers1.lazers[i][2]) * 10
+        app.lazers1.lazers[i][0] = app.lazers1.lazers[i][0] + math.cos(app.lazers1.lazers[i][2]) * app.lazers1.speed
+        app.lazers1.lazers[i][1] = app.lazers1.lazers[i][1] - math.sin(app.lazers1.lazers[i][2]) * app.lazers1.speed
         
         #if lazer hits boss
         if app.boss1.health and distance(app, app.boss1.x, app.boss1.y, app.lazers1.lazers[i][0], app.lazers1.lazers[i][1]) < app.boss1.size:

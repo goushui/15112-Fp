@@ -2,6 +2,13 @@ from cmu_graphics import *
 import math
 
 
+"""
+Why is my game laggy
+
+
+"""
+
+
 #==============================================================================
 #==============================================================================
 #START
@@ -56,7 +63,7 @@ class lazers:
     def __init__(self):
 
         self.lazers = []
-        self.dmg = 5
+        self.dmg = 50
         self.color = "red"
         self.width = 1
         self.speed = 10
@@ -93,10 +100,9 @@ def reset(app):
     app.map1 = map()
     
     app.stepPerSecond = 30
-    app.paused = True
     app.time = 0
     
-    app.ending = 0
+    app.situation = 0
 
     
     #CHAR VARIABLES
@@ -138,12 +144,17 @@ def redrawAll(app):
     if app.lazers1.lazers:
         drawLazers(app)
 
-    if app.ending == 1:
+    #game over screen
+    if app.situation == 1:
         drawEnding1(app)
 
-    else:
-        if app.paused:
-            pauseScreen(app)
+    #ugrade screen
+    elif app.situation == 2:
+        drawUpgradeSelector(app)
+
+    #pause screen
+    elif app.situation == 3:
+        pauseScreen(app)
     
 #=======================================
 #DRAWING HELPER FUNTIONS
@@ -237,7 +248,18 @@ def drawCharacterHealthbar(app):
         
     drawLabel(f'{app.character1.health} / {app.character1.totalHealth}', leftMargin+healthBarSize/2, app.height-botMargin, size = 20)
     
+#Uprgrade selector
+def drawUpgradeSelector(app):
+    
+    rectWidth = app.width/5
+    rectHeight = app.height/1.5
 
+    gapWidth = rectWidth/4
+
+    startX = app.width/2 - gapWidth * 1.5 - rectWidth * 1.5
+
+    for i in range(4):
+        drawRect(startX + i * (gapWidth + rectWidth), app.height/2, rectWidth, rectHeight, align = "center")
 #==============================================================================
 #==============================================================================
 #CONTROLLERS
@@ -245,7 +267,10 @@ def drawCharacterHealthbar(app):
 #==============================================================================
 def onKeyPress(app, key):
     if key == 'p':
-        app.paused = not(app.paused)
+        if app.situation == 0:
+            app.situation = 3
+        elif app.situation == 3:
+            app.situation = 0
 
     #lazers
     if key == 'q' and app.lazers1.cooldown == 0:
@@ -293,15 +318,18 @@ def setTarget(app, mouseX, mouseY):
     else:
         app.character1.targetAngle = math.pi - math.asin(deltaY/hypotenuse)
 
-
 #=======================================
 #onStep
 #=======================================     
 def onStep(app):
 
-    if app.paused:
+    if app.situation == 1:
         pass
-
+    elif app.situation == 2:
+        pass
+    elif app.situation == 3:
+        pass
+    
     else:
         
         app.time += 1
@@ -329,11 +357,10 @@ def abilityCooldowns(app):
     if app.lazers1.cooldown > 0:
         app.lazers1.cooldown -= 1
 
+#finds the distance between where the chracter is moving to and the character and checks that it is higher then the chracter speed
 def characterMove(app):
 
-    #finds the distance between where the chracter is moving to and the character and checks that it is higher then the chracter speed
     #if greater then the speed the it sets the dx and dy values and decreases the moveTo Values
-    #else it sets move to coords to the coords of the character
     if distance(app, app.character1.x, app.character1.y, app.character1.moveToCoords[0], app.character1.moveToCoords[1]) > app.character1.speed:
 
         app.character1.dx = (app.character1.speed * math.cos(app.character1.moveToAngle))
@@ -342,6 +369,7 @@ def characterMove(app):
         app.character1.moveToCoords[0] -= app.character1.dx
         app.character1.moveToCoords[1] -= app.character1.dy
 
+    #else it sets move to coords to the coords of the character
     else:
         app.character1.moveToCoords[0], app.character1.moveToCoords[1] = app.character1.x, app.character1.y
         app.character1.isMoving = False
@@ -350,7 +378,6 @@ def moveMap(app):
     if app.character1.isMoving:
         app.map1.dx -= app.character1.dx
         app.map1.dy -= app.character1.dy
-
 
 #loops through all the lazers and moves them
 #checks if any lazers collide with the boss and deals damage to the boss if so
@@ -413,14 +440,14 @@ def bossAttack(app):
 def checkCharacterDead(app):
     if app.character1.health <= 0:
         app.character1.health = 0
-        app.ending = 1
+        app.situation = 1
 
 def checkBossDead(app):
     if app.boss1.health <= 0:
         app.boss1.health = 0
         app.boss1.respawnTimer = 200   
-        app.character1.kills += 1     
-
+        app.character1.kills += 1    
+        app.situation = 2
 
 #=======================================
 #GENERAL HELPER FUNTIONS
@@ -434,7 +461,6 @@ def roundToThousands(app, num):
     
 def distance(app, x1, y1, x2, y2):
     return ((x2-x1)**2 + (y2-y1)**2)**0.5
-
 
 #=======================================
 #MAIN
