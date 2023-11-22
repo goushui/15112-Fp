@@ -242,6 +242,26 @@ def reset(app):
         app.character1.y = app.gameHeight/2
 
     #GIF
+
+
+    #map
+    if True:
+
+        myGif = Image.open('images/grass.gif')
+        app.spriteList0 = []
+        for frame in range(myGif.n_frames):
+            #Set the current frame
+            myGif.seek(frame)
+            #Resize the image
+            fr = myGif.resize((myGif.size[0]//2, myGif.size[1]//2))
+            #Flip the image
+            fr = fr.transpose(Image.FLIP_LEFT_RIGHT)
+            #Convert to CMUImage
+            fr = CMUImage(fr)
+            #Put in our sprite list
+            app.spriteList0.append(fr)
+        app.spriteCounter0 = 0
+
     #char facing right
     if True:
 
@@ -313,6 +333,7 @@ def reset(app):
 
 
 
+
 def resetBoss(app):
     app.boss1.x = 0
     app.boss1.y = 0
@@ -363,11 +384,12 @@ def redrawAll(app):
 
 #DRAWING MAP
 def drawMap(app):
-    drawRect(app.map1.dx + 0, app.map1.dy + 0, 2000, 2000, fill = 'black', opacity = 70)
-    drawRect(app.map1.dx + 0, app.map1.dy + 300, app.width, 40, fill = 'black')
-    drawRect(app.map1.dx + 0, app.map1.dy + 300, app.width, 40, fill = 'white', opacity = 50)
-    drawRect(app.map1.dx + 400, app.map1.dy + 0, 40, app.gameHeight, fill = 'black')
-    drawRect(app.map1.dx + 400, app.map1.dy + 0, 40, app.gameHeight, fill = 'white', opacity = 50)
+    # drawRect(app.map1.dx + 0, app.map1.dy + 0, 2000, 2000, fill = 'black', opacity = 70)
+    # drawRect(app.map1.dx + 0, app.map1.dy + 300, app.width, 40, fill = 'black')
+    # drawRect(app.map1.dx + 0, app.map1.dy + 300, app.width, 40, fill = 'white', opacity = 50)
+    # drawRect(app.map1.dx + 400, app.map1.dy + 0, 40, app.gameHeight, fill = 'black')
+    # drawRect(app.map1.dx + 400, app.map1.dy + 0, 40, app.gameHeight, fill = 'white', opacity = 50)
+    drawImage(app.spriteList0[app.spriteCounter0], app.map1.dx, app.map1.dy)
 
 #DRAWING Bottom Bar
 def drawBotBar(app):
@@ -838,6 +860,9 @@ def animateChar(app):
         #boss
         app.spriteCounter3 = (app.spriteCounter3 + 1) % len(app.spriteList3)
         app.spriteCounter4 = (app.spriteCounter4 + 1) % len(app.spriteList4)
+
+        #backround
+        app.spriteCounter0 = (app.spriteCounter0 + 1) % len(app.spriteList0)
 
 #=======================================
 #GENERAL HELPER FUNTIONS
