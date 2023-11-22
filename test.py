@@ -1,22 +1,13 @@
-class a:
-
-    def __init__(self):
-        self.number = 1
-
-class b:
-
-    def __init__(self):
-        self.number = 2
+from cmu_graphics import *
 
 
-class c:
+def appStarted(app):
+    url = 'https://tinyurl.com/great-pitch-gif'
+    app.image1 = app.loadImage(url)
+    app.image2 = app.scaleImage(app.image1, 2/3)
 
-    def __init__(self):
-        self.number = 3
+def redrawAll(app, canvas):
+    canvas.create_image(200, 300, image=ImageTk.PhotoImage(app.image1))
+    canvas.create_image(500, 300, image=ImageTk.PhotoImage(app.image2))
 
-def main():
-
-    L = []
-    L .append()
-
-main()
+runApp(width=700, height=600)

@@ -1,4 +1,5 @@
 from cmu_graphics import *
+from PIL import Image
 import math
 import random
 
@@ -15,6 +16,7 @@ make more dmg lazers wideer
 
 citations:
 - framseshift got the idea of moving all the things on the screen from 2022 page
+- Gif animation code from F23_demos 11/21 Lecture
 """
 
 
@@ -37,7 +39,7 @@ class boss:
         self.meleeDmg = 34
         self.totalHealth = 100
         self.health = 0
-        self.speed = 1
+        self.speed = 4
         self.x = 0
         self.y = 0
         self.size = 40
@@ -64,7 +66,7 @@ class character:
         self.moveToAngle = None
 
         self.targetCoords = None
-        self.targetAngle = None
+        self.targetAngle = 0
 
         self.kills = 0
 
@@ -101,7 +103,7 @@ class charUpgrades:
 
     def __init__(self):
 
-        self.list = [False, False, False, False, False, True]
+        self.list = [False, False, False, False, False, False]
         self.Objects = []
 
         self.fourUpgrades = []
@@ -112,8 +114,8 @@ class freezingLazers(charUpgrades):
         self.bossSpeedMultiplier = 1
         self.bossFreezeCD = 0
 
-        self.setnBossSpeedMultiplier = 1
-        self.setBossFreezeCD = 20
+        self.setBossSpeedMultiplier = 0.5
+        self.setBossFreezeCD = 60
 
         self.line1 = "lazers freeze"
         self.line2 = "the enemy"
@@ -144,7 +146,7 @@ class lazerAttackSpeed(charUpgrades):
         self.id = 2
 
     def activate(self, app):
-        app.lazers1.cD *= 0.9
+        app.lazers1.cD *= 0.5
 
 class fasterMS(charUpgrades):
         
@@ -239,6 +241,77 @@ def reset(app):
         app.character1.x = app.width/2
         app.character1.y = app.gameHeight/2
 
+    #GIF
+    #char facing right
+    if True:
+
+        myGif = Image.open('images/kirb.gif')
+        app.spriteList = []
+        for frame in range(myGif.n_frames):
+            #Set the current frame
+            myGif.seek(frame)
+            #Resize the image
+            fr = myGif.resize((myGif.size[0]//2, myGif.size[1]//2))
+            #Flip the image
+            fr = fr.transpose(Image.FLIP_LEFT_RIGHT)
+            #Convert to CMUImage
+            fr = CMUImage(fr)
+            #Put in our sprite list
+            app.spriteList.append(fr)
+        app.spriteCounter = 0
+
+    #char facing left
+    if True:
+        myGif = Image.open('images/kirb2.gif')
+        app.spriteList2 = []
+        for frame in range(myGif.n_frames):
+            #Set the current frame
+            myGif.seek(frame)
+            #Resize the image
+            fr = myGif.resize((myGif.size[0]//2, myGif.size[1]//2))
+            #Flip the image
+            fr = fr.transpose(Image.FLIP_LEFT_RIGHT)
+            #Convert to CMUImage
+            fr = CMUImage(fr)
+            #Put in our sprite list
+            app.spriteList2.append(fr)
+        app.spriteCounter2 = 0
+
+    #boss facing right
+    if True:
+        myGif = Image.open('images/kirb2.gif')
+        app.spriteList3 = []
+        for frame in range(myGif.n_frames):
+            #Set the current frame
+            myGif.seek(frame)
+            #Resize the image
+            fr = myGif.resize((myGif.size[0]//2, myGif.size[1]//2))
+            #Flip the image
+            fr = fr.transpose(Image.FLIP_LEFT_RIGHT)
+            #Convert to CMUImage
+            fr = CMUImage(fr)
+            #Put in our sprite list
+            app.spriteList3.append(fr)
+        app.spriteCounter3 = 0
+
+    #boss facing left
+    if True:
+        myGif = Image.open('images/kirb2.gif')
+        app.spriteList4 = []
+        for frame in range(myGif.n_frames):
+            #Set the current frame
+            myGif.seek(frame)
+            #Resize the image
+            fr = myGif.resize((myGif.size[0]//2, myGif.size[1]//2))
+            #Flip the image
+            fr = fr.transpose(Image.FLIP_LEFT_RIGHT)
+            #Convert to CMUImage
+            fr = CMUImage(fr)
+            #Put in our sprite list
+            app.spriteList4.append(fr)
+        app.spriteCounter4 = 0
+
+
 
 def resetBoss(app):
     app.boss1.x = 0
@@ -255,6 +328,7 @@ def resetBoss(app):
 #DRAWING
 #==============================================================================
 #==============================================================================
+
 def redrawAll(app):
 
     drawMap(app)
@@ -312,7 +386,11 @@ def pauseScreen(app):
 
 #DRAWS CHRACTER
 def drawCharacter(app):
-    drawCircle(app.character1.x, app.character1.y, app.character1.size)
+
+    if abs(app.character1.targetAngle) < math.pi/2:
+        drawImage(app.spriteList[app.spriteCounter], app.character1.x, app.character1.y, align = 'center')
+    else:
+        drawImage(app.spriteList2[app.spriteCounter2], app.character1.x, app.character1.y, align = 'center')
 
 #LAZERS   
 def drawLasers(app):
@@ -327,7 +405,10 @@ def drawLasers(app):
 
 #drawBoss
 def drawBoss(app):
-    drawCircle(app.boss1.x, app.boss1.y, app.boss1.size, align = 'center', fill = app.boss1.color)
+    if abs(app.boss1.targetAngle) < math.pi/2:
+        drawImage(app.spriteList[app.spriteCounter], app.boss1.x, app.boss1.y, align = 'center')
+    else:
+        drawImage(app.spriteList2[app.spriteCounter2], app.boss1.x, app.boss1.y, align = 'center')
     
 #boss healthbar
 def drawBossHealthbar(app):
@@ -394,14 +475,15 @@ def drawUpgradeSelector(app):
 
         if app.upgradeBoxes1.highlighted == i:
             drawRect(x, app.height/2, rectWidth+20, rectHeight+20, align = "center", fill = "cyan")
-        drawRect(x, app.height/2, rectWidth, rectHeight, align = "center", fill = "grey")
+        drawRect(x, app.height/2, rectWidth, rectHeight, align = "center", fill = "white", border = "black")
+        drawRect(x, app.height/2, rectWidth, rectHeight, align = "center", fill = "black", border = "black", opacity = 30)
 
         drawCharUpgrades(app, x, i)
 
 def drawCharUpgrades(app, x, i):
 
-    drawLabel(app.charUpgrades1.fourUpgrades[i].line1, x, app.height/2 - app.height*1/6, size = 20)
-    drawLabel(app.charUpgrades1.fourUpgrades[i].line2, x, app.height/2 - app.height*1/6 + 40, size = 20)
+    drawLabel(app.charUpgrades1.fourUpgrades[i].line1, x, app.height/2 - app.height*1/6, size = 25, bold = True)
+    drawLabel(app.charUpgrades1.fourUpgrades[i].line2, x, app.height/2 - app.height*1/6 + 40, size = 25, bold = True)
 
 #==============================================================================
 #==============================================================================
@@ -571,9 +653,11 @@ def onStep(app):
         if app.boss1.health:
             bossMove(app)
 
+        #GIF
+        animateChar(app)
+
 
         app.dash1.isDashing = False
-
 
 #decreases ability cooldowns
 def abilityCooldowns(app):
@@ -620,8 +704,6 @@ def characterMove(app):
             app.character1.moveToCoords[0], app.character1.moveToCoords[1] = app.character1.x, app.character1.y
             app.character1.isMoving = False
 
-
-
 def moveMap(app):
     app.map1.dx -= app.character1.dx
     app.map1.dy -= app.character1.dy
@@ -643,7 +725,7 @@ def moveLazers(app):
         if app.boss1.health and distance(app, app.boss1.x, app.boss1.y, app.lazers1.lazers[i][0], app.lazers1.lazers[i][1]) < app.boss1.size:
             #checks for freezin lazer
             if app.charUpgrades1.list[0]:
-                app.freezingLazers1.bossSpeedMultiplier = app.freezingLazers1.bossSpeedMultiplier
+                app.freezingLazers1.bossSpeedMultiplier = app.freezingLazers1.setBossSpeedMultiplier
                 app.freezingLazers1.bossFreezeCD = app.freezingLazers1.setBossFreezeCD 
 
             #does damage
@@ -664,12 +746,18 @@ def bossMove(app):
     
     if app.boss1.health:
     
-        verticalLength = (app.character1.y-app.boss1.y)
-        horizontalLength = (app.character1.x-app.boss1.x) 
+        deltaY = (app.character1.y-app.boss1.y)
+        deltaX = (app.character1.x-app.boss1.x) 
         hypotenuse = pythagoreanTheorem((app.character1.x-app.boss1.x), (app.character1.y-app.boss1.y))
+
+
+        if deltaX >= 0:
+            app.boss1.targetAngle = math.asin(deltaY/hypotenuse)
+        else:
+            app.boss1.targetAngle = math.pi - math.asin(deltaY/hypotenuse)
         
-        bossXVelocity = horizontalLength/hypotenuse * app.boss1.speed
-        bossYVelocity = -verticalLength/hypotenuse * app.boss1.speed
+        bossXVelocity = deltaX/hypotenuse * app.boss1.speed
+        bossYVelocity = -deltaY/hypotenuse * app.boss1.speed
 
         #freezing lasers
         if app.freezingLazers1.bossFreezeCD > 0:
@@ -737,6 +825,19 @@ def getNumUpgradesLeft(app):
     if counter >= 4:
         return True
     return False
+
+#GIF
+def animateChar(app):
+    #Set spriteCounter to next frame
+    if app.time % 3 == 0:
+
+        #char
+        app.spriteCounter = (app.spriteCounter + 1) % len(app.spriteList)
+        app.spriteCounter2 = (app.spriteCounter2 + 1) % len(app.spriteList2)
+
+        #boss
+        app.spriteCounter3 = (app.spriteCounter3 + 1) % len(app.spriteList3)
+        app.spriteCounter4 = (app.spriteCounter4 + 1) % len(app.spriteList4)
 
 #=======================================
 #GENERAL HELPER FUNTIONS
