@@ -1,5 +1,6 @@
 from cmu_graphics import *
 from PIL import Image
+import os, pathlib
 import math
 import random
 
@@ -8,15 +9,19 @@ import random
 Why is my game laggy?
 are my comments okay?
 
+to do
+-make randomly generted map
+    rocks
+-make sprites
+-make pathfinding
+-add images for the upgrades
 
-to
-- make freeze lazers blue
-make more dmg lazers wideer
 
 
 citations:
 - framseshift got the idea of moving all the things on the screen from 2022 page
 - Gif animation code from F23_demos 11/21 Lecture
+- map backround code from F23_demos 11/21 Lecture
 """
 
 
@@ -39,7 +44,7 @@ class boss:
         self.meleeDmg = 34
         self.totalHealth = 100
         self.health = 0
-        self.speed = 4
+        self.speed = 1
         self.x = 0
         self.y = 0
         self.size = 40
@@ -51,7 +56,7 @@ class character:
 
     def __init__(self):
 
-        self.speed = 3
+        self.speed = 50
         self.totalHealth = 100
         self.health = 100
         self.x = 0
@@ -241,26 +246,25 @@ def reset(app):
         app.character1.x = app.width/2
         app.character1.y = app.gameHeight/2
 
-    #GIF
+    #sets the coordinates of the map
+    app.map1.dx = app.character1.x
+    app.map1.dy = app.character1.y
 
+    #GIF
 
     #map
     if True:
 
-        myGif = Image.open('images/grass.gif')
-        app.spriteList0 = []
-        for frame in range(myGif.n_frames):
-            #Set the current frame
-            myGif.seek(frame)
-            #Resize the image
-            fr = myGif.resize((myGif.size[0]//2, myGif.size[1]//2))
-            #Flip the image
-            fr = fr.transpose(Image.FLIP_LEFT_RIGHT)
-            #Convert to CMUImage
-            fr = CMUImage(fr)
-            #Put in our sprite list
-            app.spriteList0.append(fr)
-        app.spriteCounter0 = 0
+        # Open image from local directory
+        app.backround = Image.open('images/grass.gif')
+
+        #makes the size of the backround
+        app.backroundWidth = 5000
+        app.backroundHeight = 5000
+        app.backround = app.backround.resize((app.backroundWidth, app.backroundHeight))
+
+        # Cast image type to CMUImage to allow for faster drawing
+        app.backround = CMUImage(app.backround)
 
     #char facing right
     if True:
@@ -331,9 +335,6 @@ def reset(app):
             app.spriteList4.append(fr)
         app.spriteCounter4 = 0
 
-
-
-
 def resetBoss(app):
     app.boss1.x = 0
     app.boss1.y = 0
@@ -353,9 +354,7 @@ def resetBoss(app):
 def redrawAll(app):
 
     drawMap(app)
-    drawBotBar(app)
 
-    drawCharacterHealthbar(app)
     if app.character1.health:
         drawCharacter(app)
 
@@ -378,18 +377,19 @@ def redrawAll(app):
     elif app.situation == 3:
         pauseScreen(app)
     
+    drawBotBar(app)
+    drawCharacterHealthbar(app)
+
 #=======================================
 #DRAWING HELPER FUNTIONS
 #=======================================
 
 #DRAWING MAP
 def drawMap(app):
-    # drawRect(app.map1.dx + 0, app.map1.dy + 0, 2000, 2000, fill = 'black', opacity = 70)
-    # drawRect(app.map1.dx + 0, app.map1.dy + 300, app.width, 40, fill = 'black')
-    # drawRect(app.map1.dx + 0, app.map1.dy + 300, app.width, 40, fill = 'white', opacity = 50)
-    # drawRect(app.map1.dx + 400, app.map1.dy + 0, 40, app.gameHeight, fill = 'black')
-    # drawRect(app.map1.dx + 400, app.map1.dy + 0, 40, app.gameHeight, fill = 'white', opacity = 50)
-    drawImage(app.spriteList0[app.spriteCounter0], app.map1.dx, app.map1.dy)
+    
+    drawRect(app.map1.dx, app.map1.dy, 7000, 7000, align = "center", fill = "lightblue")
+    # drawPILImage takes in a PIL image object and the left-top coordinates
+    drawImage(app.backround, app.map1.dx, app.map1.dy, align = "center")
 
 #DRAWING Bottom Bar
 def drawBotBar(app):
@@ -400,6 +400,7 @@ def drawEnding1(app):
     drawRect(0, 0, app.width, app.height, fill = 'black', opacity = 40)
     drawLabel('GAME OVER', app.width/2, app.height/2-130, size = 40, bold = True, fill = "cyan")
     drawLabel(f'SCORE: {app.character1.kills}', app.width/2, app.height/2-70, size = 40, bold = True, fill = "cyan")
+    drawLabel('PRESS L TO RESTART', app.width/2, app.height/2-10, size = 40, bold = True, fill = "cyan")
 
 #PAUSE SCREEN
 def pauseScreen(app):
@@ -534,12 +535,17 @@ def onKeyPress(app, key):
         #dash
         elif key == 'e' and app.charUpgrades1.list[5] and app.dash1.curcD <= 0:
             dashes(app)
+    elif app.situation == 1:
+        if key == 'l':
+            reset(app)
 
 def dashes(app):
-    print()
+
+    dashDistance = min(app.targetDistance, app.dash1.distance)
+    
     #changes dx base on the length of the dash and the position of the mouse
-    app.dash1.dx = (app.dash1.distance * math.cos(app.character1.targetAngle))
-    app.dash1.dy = -(app.dash1.distance * math.sin(app.character1.targetAngle))
+    app.dash1.dx = (dashDistance * math.cos(app.character1.targetAngle))
+    app.dash1.dy = -(dashDistance * math.sin(app.character1.targetAngle))
     app.dash1.ready = True
     app.character1.isMoving = True
 
@@ -580,14 +586,19 @@ def selectUpgrade(app, mouseX, mouseY):
 def setMoveTo(app, mouseX, mouseY):
 
     app.character1.isMoving = True
-    app.character1.moveToCoords = [mouseX, mouseY]
 
-    deltaX = mouseX - app.character1.x
-    deltaY = -(mouseY - app.character1.y)
+    #makes sure the point is in bounds
+    res = pointInBounds(app, mouseX, mouseY)
+    app.character1.moveToCoords = res[1]
+    deltaX = res[0][0]
+    deltaY = res[0][1]
 
     hypotenuse = pythagoreanTheorem(deltaX, deltaY)
-    
-    if deltaX >= 0:
+
+    #make sure no crash
+    if hypotenuse == 0:
+        pass
+    elif deltaX >= 0:
         app.character1.moveToAngle = math.asin(deltaY/hypotenuse)
     else:
         app.character1.moveToAngle = math.pi - math.asin(deltaY/hypotenuse)
@@ -605,15 +616,22 @@ def onMouseMove(app, mouseX, mouseY):
 
 def setTarget(app, mouseX, mouseY):
     #finds the angle that the mouse is facing
+    #assigns the target coordinates of the mouse
 
-    app.targetCoords = mouseX, mouseY
-
-    deltaX = mouseX - app.character1.x
-    deltaY = -(mouseY - app.character1.y)
+    #makes sure the point is in bounds
+    res = pointInBounds(app, mouseX, mouseY)
+    app.targetCoords = res[1]
+    deltaX = res[0][0]
+    deltaY = res[0][1]
 
     hypotenuse = pythagoreanTheorem(deltaX, deltaY)
-    
-    if deltaX >= 0:
+
+    app.targetDistance = hypotenuse
+
+    #make sure no crash
+    if hypotenuse == 0:
+        pass
+    elif deltaX >= 0:
         app.character1.targetAngle = math.asin(deltaY/hypotenuse)
     else:
         app.character1.targetAngle = math.pi - math.asin(deltaY/hypotenuse)
@@ -642,6 +660,38 @@ def findBoxOfMouse(app, mouseX, mouseY):
         
     return None
 
+def pointInBounds(app, mouseX, mouseY):
+    #makes sure the character is in bounds of the map
+    #calculates the position of the chracter relative to the center of the backorund image
+    #if the character is too far away in either direction, reset the coordinates to that of the bound
+
+    deltaX = mouseX - app.character1.x
+    deltaY = mouseY - app.character1.y
+
+    targetX = deltaX - app.map1.dx
+    targetY = deltaY - app.map1.dy
+
+    rightBound = -app.width/2 + app.backroundWidth/2 - 100
+    leftBound = -app.width/2 - app.backroundWidth/2 + 100
+    bottomtBound = -app.gameHeight/2 + app.backroundHeight/2 - 100
+    topBound = -app.gameHeight/2 - app.backroundHeight/2 + 100
+
+    if targetX > rightBound:
+        deltaX = rightBound + app.map1.dx
+        mouseX = deltaX + app.character1.x
+    elif targetX < leftBound:
+        deltaX = leftBound + app.map1.dx
+        mouseX = deltaX + app.character1.x
+    if targetY > bottomtBound:
+        deltaY = bottomtBound + app.map1.dy
+        mouseY = deltaY + app.character1.y
+    elif targetY < topBound:
+        deltaY = topBound + app.map1.dy
+        mouseY = deltaY + app.character1.y
+
+    deltaY = -deltaY
+
+    return [[deltaX, deltaY], [mouseX, mouseY]]
 #=======================================
 #onStep
 #=======================================     
@@ -678,8 +728,8 @@ def onStep(app):
         #GIF
         animateChar(app)
 
-
         app.dash1.isDashing = False
+
 
 #decreases ability cooldowns
 def abilityCooldowns(app):
@@ -861,8 +911,10 @@ def animateChar(app):
         app.spriteCounter3 = (app.spriteCounter3 + 1) % len(app.spriteList3)
         app.spriteCounter4 = (app.spriteCounter4 + 1) % len(app.spriteList4)
 
-        #backround
-        app.spriteCounter0 = (app.spriteCounter0 + 1) % len(app.spriteList0)
+
+
+    
+
 
 #=======================================
 #GENERAL HELPER FUNTIONS
