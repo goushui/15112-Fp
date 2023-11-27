@@ -56,7 +56,7 @@ class character:
 
     def __init__(self):
 
-        self.speed = 50
+        self.speed = 3
         self.totalHealth = 100
         self.health = 100
         self.x = 0
@@ -156,7 +156,7 @@ class lazerAttackSpeed(charUpgrades):
 class fasterMS(charUpgrades):
         
     def __init__(self):
-        self.speedMuliplier = 1.2
+        self.speedMuliplier = 2
 
         self.line1 = "character moves"
         self.line2 = "faster"
@@ -164,7 +164,7 @@ class fasterMS(charUpgrades):
         self.id = 3
 
     def activate(self, app):
-        app.character1.speed *= 1.2
+        app.character1.speed *= 2
 
 class increaseHP(charUpgrades):
 
@@ -199,6 +199,7 @@ class dash(charUpgrades):
 
     def activate(self, app):
         pass
+
 #==============================================================================
 #==============================================================================
 #START
@@ -335,11 +336,52 @@ def reset(app):
             app.spriteList4.append(fr)
         app.spriteCounter4 = 0
 
+    #rocks
+    app.rocks = []
+    if True:
+        generateRocks(app)
+
 def resetBoss(app):
     app.boss1.x = 0
     app.boss1.y = 0
     app.boss1.health = app.boss1.totalHealth
     
+
+def generateRocks(app):
+    #randomly generates rocks of different sizes across the map
+    #rocks cannot spawn in the center where the character spawns in
+    
+    numRocks = random.randint(1, 100)
+
+    for i in range(numRocks):
+
+        mapLeftBound = app.map1.dx - app.backroundWidth/2 + 300
+        mapRightBound = app.map1.dx + app.backroundWidth/2 - 300
+
+        mapTopBound = app.map1.dy - app.backroundHeight/2 + 300
+        mapBottomtBound = app.map1.dy + app.backroundHeight/2 - 300
+
+        spawnLeftBound = app.map1.dx - 300
+        spawnRightBound = app.map1.dx + 300
+
+        spawnTopBound = app.map1.dy - 300
+        spawnBottomtBound = app.map1.dy + 300
+
+        rand1 = random.randint(1, 2)
+        if rand1 == 1:
+            x = random.randint(mapLeftBound, spawnLeftBound)
+        else:
+            x = random.randint(spawnRightBound, mapRightBound)
+
+        rand2 = random.randint(1, 2)
+        if rand2 == 1:
+            y = random.randint(mapTopBound, spawnTopBound)
+        else:
+            y = random.randint(spawnBottomtBound, mapBottomtBound)
+
+        size = random.randint(50, 200)
+
+        app.rocks.append([x, y, size])
 #=======================================
 #MODEL HELPER FUNTIONS
 #=======================================
@@ -354,6 +396,8 @@ def resetBoss(app):
 def redrawAll(app):
 
     drawMap(app)
+
+    drawRocks(app)
 
     if app.character1.health:
         drawCharacter(app)
@@ -508,6 +552,10 @@ def drawCharUpgrades(app, x, i):
     drawLabel(app.charUpgrades1.fourUpgrades[i].line1, x, app.height/2 - app.height*1/6, size = 25, bold = True)
     drawLabel(app.charUpgrades1.fourUpgrades[i].line2, x, app.height/2 - app.height*1/6 + 40, size = 25, bold = True)
 
+def drawRocks(app):
+
+    for i in range(len(app.rocks)):
+        drawCircle(app.rocks[i][0], app.rocks[i][1], app.rocks[i][2], fill = "grey")
 #==============================================================================
 #==============================================================================
 #CONTROLLERS
@@ -712,6 +760,7 @@ def onStep(app):
         if app.character1.isMoving:
             characterMove(app)
             moveMap(app)
+            shiftRocks(app)
 
         if len(app.lazers1.lazers) > 0:
             moveLazers(app)
@@ -911,10 +960,17 @@ def animateChar(app):
         app.spriteCounter3 = (app.spriteCounter3 + 1) % len(app.spriteList3)
         app.spriteCounter4 = (app.spriteCounter4 + 1) % len(app.spriteList4)
 
+def shiftRocks(app):
 
+    i = 0
+    while i < len(app.rocks):
 
+        #frameshift rocks
+        if app.character1.isMoving or app.dash1.isDashing:
+            app.rocks[i][0] -= app.character1.dx
+            app.rocks[i][1] -= app.character1.dy
     
-
+        i+=1
 
 #=======================================
 #GENERAL HELPER FUNTIONS
