@@ -19,6 +19,7 @@ to do
 
 
 citations:
+- game idea from Vampire Survivors
 - framseshift got the idea of moving all the things on the screen from 2022 page
 - Gif animation code from F23_demos 11/21 Lecture
 - map backround code from F23_demos 11/21 Lecture
@@ -39,6 +40,18 @@ class boss:
         self.respawnTimer = 1
         self.slowness = 0
         self.targetAngle = 0
+
+class lasers:
+
+    def __init__(self):
+
+        self.lasers = []
+        self.dmg = 50
+        self.color = "red"
+        self.width = 2
+        self.speed = 10
+        self.cD = 50
+        self.currentcD = 0
 
 #==============================================================================
 #==============================================================================
@@ -83,9 +96,11 @@ def reset(app):
 
         app.kills = 0
 
-    #boss
+    #classes
     if True:
         app.boss1 = boss()
+        app.lasers1 = lasers()
+
 
     #frameshift Variables
     if True:
@@ -100,8 +115,8 @@ def reset(app):
             app.backround = Image.open('images/grass.gif')
 
             #makes the size of the backround
-            app.backroundWidth = 200
-            app.backroundHeight = 200
+            app.backroundWidth = 5000
+            app.backroundHeight = 5000
             app.backround = app.backround.resize((app.backroundWidth, app.backroundHeight))
 
             # Cast image type to CMUImage to allow for faster drawing
@@ -467,20 +482,14 @@ def bossMove(app):
 
         x = app.boss1.x - app.frameshiftX
         y = app.boss1.y - app.frameshiftY
-
-        print("x, y", x, y)
     
         deltaX = (app.charX-x)
         deltaY = (app.charY-y)
-
-        print("deltaX, deltaY", deltaX, deltaY)
 
         deltaY = -deltaY 
 
         hypotenuse = pythagoreanTheorem(deltaX, deltaY)
         
-        print("hypotenuse", hypotenuse)
-
         #make sure no crash
         if hypotenuse == 0:
             pass
@@ -497,9 +506,6 @@ def bossMove(app):
             app.boss1.x += graphicsHorizontalMovement
             app.boss1.y += graphicsVerticalMovement
             
-            print("app.boss1.x", app.boss1.x)
-            print("app.boss1.y", app.boss1.y)
-
             bossAttack(app)
 
 #checks if boss is in range to do a melee attack 
