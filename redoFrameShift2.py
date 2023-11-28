@@ -24,6 +24,21 @@ citations:
 - map backround code from F23_demos 11/21 Lecture
 """
 
+class boss:
+
+    def __init__(self):
+
+        self.meleeDmg = 34
+        self.totalHealth = 100
+        self.health = 0
+        self.speed = 1
+        self.x = 0
+        self.y = 0
+        self.size = 40
+        self.color = "purple"
+        self.respawnTimer = 1
+        self.slowness = 0
+        self.targetAngle = 0
 
 #==============================================================================
 #==============================================================================
@@ -64,13 +79,18 @@ def reset(app):
 
         app.targetCoords = None
         app.targetAngle = 0
+        app.targetDistance = None
 
         app.kills = 0
 
+    #boss
+    if True:
+        app.boss1 = boss()
+
     #frameshift Variables
     if True:
-        app.frameShiftX = app.width/2
-        app.frameShiftY = app.gameHeight/2
+        app.frameshiftX = 0
+        app.frameshiftY = 0
 
     #Images====================================================================
     if True:
@@ -80,8 +100,8 @@ def reset(app):
             app.backround = Image.open('images/grass.gif')
 
             #makes the size of the backround
-            app.backroundWidth = 5000
-            app.backroundHeight = 5000
+            app.backroundWidth = 200
+            app.backroundHeight = 200
             app.backround = app.backround.resize((app.backroundWidth, app.backroundHeight))
 
             # Cast image type to CMUImage to allow for faster drawing
@@ -125,7 +145,7 @@ def reset(app):
         #boss facing right
         if True:
             myGif = Image.open('images/kirb2.gif')
-            app.charSpriteList3 = []
+            app.bossSpriteList1 = []
             for frame in range(myGif.n_frames):
                 #Set the current frame
                 myGif.seek(frame)
@@ -136,13 +156,13 @@ def reset(app):
                 #Convert to CMUImage
                 fr = CMUImage(fr)
                 #Put in our sprite list
-                app.charSpriteList3.append(fr)
-            app.charSpriteCounter3 = 0
+                app.bossSpriteList1.append(fr)
+            app.bossSpriteCounter1 = 0
 
         #boss facing left
         if True:
             myGif = Image.open('images/kirb2.gif')
-            app.charSpriteList4 = []
+            app.bossSpriteList2 = []
             for frame in range(myGif.n_frames):
                 #Set the current frame
                 myGif.seek(frame)
@@ -153,9 +173,13 @@ def reset(app):
                 #Convert to CMUImage
                 fr = CMUImage(fr)
                 #Put in our sprite list
-                app.charSpriteList4.append(fr)
-            app.charSpriteCounter4 = 0
+                app.bossSpriteList2.append(fr)
+            app.bossSpriteCounter2 = 0
 
+def resetBoss(app):
+    app.boss1.x = 0
+    app.boss1.y = 0
+    app.boss1.health = app.boss1.totalHealth
 #==============================================================================
 #==============================================================================
 #DRAWING
@@ -168,6 +192,10 @@ def redrawAll(app):
 
     if app.charHealth:
         drawCharacter(app)
+
+    if app.boss1.health:
+        drawBoss(app)
+        drawBossHealthbar(app)
 
     #game over screen
     if app.situation == 1:
@@ -188,9 +216,9 @@ def redrawAll(app):
 #DRAWING MAP
 def drawMap(app):
     
-    drawRect(app.frameShiftX, app.frameShiftY, 7000, 7000, align = "center", fill = "lightblue")
+    drawRect(app.width/2-app.frameshiftX, app.gameHeight-app.frameshiftY, 7000, 7000, align = "center", fill = "lightblue")
     # drawPILImage takes in a PIL image object and the left-top coordinates
-    drawImage(app.backround, app.frameShiftX, app.frameShiftY, align = "center")
+    drawImage(app.backround, app.width/2-app.frameshiftX, app.gameHeight/2-app.frameshiftY, align = "center")
 
 #DRAWING Bottom Bar
 def drawBotBar(app):
@@ -240,6 +268,41 @@ def drawCharacterHealthbar(app):
         
     drawLabel(f'{app.charHealth} / {app.charTotalHealth}', leftMargin+healthBarSize/2, app.height-botMargin, size = 20)
     
+#drawBoss
+def drawBoss(app):
+
+    x = app.boss1.x - app.frameshiftX
+    y = app.boss1.y - app.frameshiftY
+
+    print(x, y)
+
+    if abs(app.boss1.targetAngle) < math.pi/2:
+        drawImage(app.bossSpriteList1[app.bossSpriteCounter1], x , y, align = 'center')
+    else:
+        drawImage(app.bossSpriteList2[app.bossSpriteCounter2], x, y, align = 'center')
+    
+#boss healthbar
+def drawBossHealthbar(app):
+
+    healthBarSize = 800
+    border = 4
+    
+    drawRect(app.width/2, 40, healthBarSize + border, 30 + border, align = 'center', border = 'black', borderWidth = 100)
+    
+    rectWidth = healthBarSize/app.boss1.totalHealth
+    startX = app.width/2-healthBarSize/2+rectWidth/2
+    
+    for i in range(app.boss1.totalHealth):
+        
+        if i < app.boss1.health:
+            color = 'red'
+        elif i >= app.boss1.health:
+            color = rgb(200, 200, 200)
+        
+        drawRect(startX + i*rectWidth, 40, rectWidth, 30, align = 'center', fill = color)
+        
+    drawLabel(f'{app.boss1.health} / {app.boss1.totalHealth}', app.width/2, 40, size = 20)
+
 #==============================================================================
 #==============================================================================
 #CONTROLLERS
@@ -259,31 +322,14 @@ def onKeyPress(app, key):
 
         elif key == 's':
             stopMoving(app)
-        #lazers
-        elif key == 'q' and app.lazers1.currentcD == 0:
-            app.lazers1.currentcD = app.lazers1.cD
-            app.lazers1.lazers.append([app.character1.x, app.character1.y, app.character1.targetAngle])
 
-        #dash
-        elif key == 'e' and app.charUpgrades1.list[5] and app.dash1.curcD <= 0:
-            dashes(app)
     elif app.situation == 1:
         if key == 'l':
             reset(app)
 
-def dashes(app):
-
-    dashDistance = min(app.targetDistance, app.dash1.distance)
-    
-    #changes dx base on the length of the dash and the position of the mouse
-    app.dash1.dx = (dashDistance * math.cos(app.character1.targetAngle))
-    app.dash1.dy = -(dashDistance * math.sin(app.character1.targetAngle))
-    app.dash1.ready = True
-    app.character1.isMoving = True
-
 def stopMoving(app):
-    app.character1.moveToCoords = [app.width/2, app.gameHeight/2]
-    app.character1.isMoving = False
+    app.moveToCoords = [app.width/2, app.gameHeight/2]
+    app.charIsMoving = False
 
 #==============================================================================
 #onMousePress
@@ -297,56 +343,61 @@ def onMousePress(app, mouseX, mouseY, button):
 
     elif app.situation == 2:
         if button == 0:
-            selectUpgrade(app, mouseX, mouseY)
+            pass
+            # selectUpgrade(app, mouseX, mouseY)
 
-def selectUpgrade(app, mouseX, mouseY):
-    #finds if the chracter click in a box
-    #takes the id of the upgrade the character clicked on and turns it on
-    #resets the situation to 0
-    #resets the four upgrades
-
-    i = findBoxOfMouse(app, mouseX, mouseY)
-
-    if i != None:
-        upgrd = app.charUpgrades1.fourUpgrades[i]
-        upgrd.activate(app)
-        id = upgrd.id
-        app.charUpgrades1.list[id] = True
-        app.situation = 0
-        app.charUpgrades1.fourUpgrades = []
-
-
-"""
-sets a point to where the chracter is moving
-sets 
- - app.charIsMoving = True
- - app.moveToCoords
-
-"""
+# sets - app.charIsMoving, app.moveToCoords, app.moveToAngle
 def setMoveTo(app, mouseX, mouseY):
 
     app.charIsMoving = True
+    app.moveToCoords = app.targetCoords
+    app.moveToAngle = app.targetAngle
+        
+#==============================================================================
+#Mouse Move
+#==============================================================================  
+
+def onMouseMove(app, mouseX, mouseY):
+
+    if app.situation == 0:
+        setTarget(app, mouseX, mouseY)
+    elif app.situation == 2:
+        pass
+    
+def setTarget(app, mouseX, mouseY):
+    #finds the angle that the mouse is facing
+    #assigns the target coordinates of the mouse
+    #sets app.targetCoords, app.targetDistance, app.character1.targetAngle
 
     #makes sure the point is in bounds
     res = pointInBounds(app, mouseX, mouseY)
-    app.character1.moveToCoords = res[1]
+    app.targetCoords = res[1]
     deltaX = res[0][0]
     deltaY = res[0][1]
 
     hypotenuse = pythagoreanTheorem(deltaX, deltaY)
 
+    app.targetDistance = hypotenuse
+
     #make sure no crash
     if hypotenuse == 0:
         pass
     elif deltaX >= 0:
-        app.character1.moveToAngle = math.asin(deltaY/hypotenuse)
+        app.targetAngle = math.asin(deltaY/hypotenuse)
     else:
-        app.character1.moveToAngle = math.pi - math.asin(deltaY/hypotenuse)
-        
-#=======================================
-#Mouse Move
-#=======================================  
+        app.targetAngle = math.pi - math.asin(deltaY/hypotenuse)
 
+def pointInBounds(app, mouseX, mouseY):
+    #makes sure the character is in bounds of the map
+    #calculates the position of the chracter relative to the center of the backorund image
+    #if the character is too far away in either direction, reset the coordinates to that of the bound
+
+    deltaX = mouseX - app.charX
+    deltaY = mouseY - app.charY
+
+    deltaY = -deltaY
+
+    return [[deltaX, deltaY], [mouseX, mouseY]]
 #=======================================
 #onStep
 #=======================================     
@@ -363,7 +414,15 @@ def onStep(app):
 
         if app.charIsMoving:
             characterMove(app)
-            moveMap(app)
+
+        #SPAWNS BOSS AT TIME
+        if app.boss1.health == 0:
+            app.boss1.respawnTimer -= 1
+            if app.boss1.respawnTimer == 0:
+                resetBoss(app)
+
+        if app.boss1.health:
+            bossMove(app)
 
         #GIF
         animateChar(app)
@@ -372,23 +431,21 @@ def onStep(app):
 def characterMove(app):
 
     #if greater then the speed the it sets the dx and dy values and decreases the moveTo Values
-    if distance(app, app.character1.x, app.character1.y, app.character1.moveToCoords[0], app.character1.moveToCoords[1]) > app.character1.speed:
+    if distance(app, app.charX, app.charY, app.moveToCoords[0], app.moveToCoords[1]) > app.charSpeed:
 
-        app.character1.dx += (app.character1.speed * math.cos(app.character1.moveToAngle))
-        app.character1.dy -= (app.character1.speed * math.sin(app.character1.moveToAngle))
+        graphicsHorizontalMovement = app.charSpeed * math.cos(app.moveToAngle)
+        graphicsVerticalMovement = -(app.charSpeed * math.sin(app.moveToAngle))
 
-        app.character1.moveToCoords[0] = app.character1.dx
-        app.character1.moveToCoords[1] = app.character1.dy
+        app.frameshiftX += graphicsHorizontalMovement
+        app.frameshiftY += graphicsVerticalMovement
+
+        app.moveToCoords[0] -= graphicsHorizontalMovement
+        app.moveToCoords[1] -= graphicsVerticalMovement
 
     #else it sets move to coords to the coords of the character
     else:
-        app.character1.moveToCoords[0], app.character1.moveToCoords[1] = app.character1.x, app.character1.y
-        app.character1.isMoving = False
-
-def moveMap(app):
-    app.map1.dx -= app.character1.dx
-    app.map1.dy -= app.character1.dy
-
+        app.moveToCoords[0], app.moveToCoords[1] = app.charX, app.charY
+        app.charIsMoving = False
 
 #GIF
 def animateChar(app):
@@ -400,9 +457,71 @@ def animateChar(app):
         app.charSpriteCounter2 = (app.charSpriteCounter2 + 1) % len(app.charSpriteList2)
 
         #boss
-        app.charSpriteCounter3 = (app.charSpriteCounter3 + 1) % len(app.charSpriteList3)
-        app.charSpriteCounter4 = (app.charSpriteCounter4 + 1) % len(app.charSpriteList4)
+        app.bossSpriteCounter1 = (app.bossSpriteCounter1 + 1) % len(app.bossSpriteList1)
+        app.bossSpriteCounter2 = (app.bossSpriteCounter2 + 1) % len(app.bossSpriteList2)
 
+#moves the boss towards the character onStep
+def bossMove(app):
+    
+    if app.boss1.health:
+
+        x = app.boss1.x - app.frameshiftX
+        y = app.boss1.y - app.frameshiftY
+
+        print("x, y", x, y)
+    
+        deltaX = (app.charX-x)
+        deltaY = (app.charY-y)
+
+        print("deltaX, deltaY", deltaX, deltaY)
+
+        deltaY = -deltaY 
+
+        hypotenuse = pythagoreanTheorem(deltaX, deltaY)
+        
+        print("hypotenuse", hypotenuse)
+
+        #make sure no crash
+        if hypotenuse == 0:
+            pass
+        else:
+            if deltaX >= 0:
+                app.boss1.targetAngle = math.asin(deltaY/hypotenuse)
+            else:
+                app.boss1.targetAngle = math.pi - math.asin(deltaY/hypotenuse)
+            
+            graphicsHorizontalMovement = deltaX/hypotenuse * app.boss1.speed
+            graphicsVerticalMovement = -(deltaY/hypotenuse * app.boss1.speed)
+
+            #frameShift Boss
+            app.boss1.x += graphicsHorizontalMovement
+            app.boss1.y += graphicsVerticalMovement
+            
+            print("app.boss1.x", app.boss1.x)
+            print("app.boss1.y", app.boss1.y)
+
+            bossAttack(app)
+
+#checks if boss is in range to do a melee attack 
+def bossAttack(app):
+
+    bossX = app.boss1.x - app.frameshiftX
+    bossY = app.boss1.y - app.frameshiftY
+
+    if distance(app, bossX, bossY, app.charX, app.charY) < app.boss1.size:
+        app.charHealth -= app.boss1.meleeDmg
+        checkCharacterDead(app)
+
+def checkCharacterDead(app):
+    if app.charHealth <= 0:
+        app.charHealth = 0
+        app.situation = 1
+
+def checkBossDead(app):
+    if app.boss1.health <= 0:
+        app.boss1.health = 0
+        app.boss1.respawnTimer = 200   
+        app.kills += 1    
 
 #=======================================
 #GENERAL HELPER FUNTIONS
