@@ -23,6 +23,7 @@ citations:
 - framseshift got the idea of moving all the things on the screen from 2022 page
 - Gif animation code from F23_demos 11/21 Lecture
 - map backround code from F23_demos 11/21 Lecture
+- pathfinding algorithm from https://www.youtube.com/watch?v=-L-WgKMFuhE&t=405s
 """
 
 class boss:
@@ -115,8 +116,8 @@ def reset(app):
             app.backround = Image.open('images/grass.gif')
 
             #makes the size of the backround
-            app.backroundWidth = 5000
-            app.backroundHeight = 5000
+            app.backroundWidth = 1000
+            app.backroundHeight = 1000
             app.backround = app.backround.resize((app.backroundWidth, app.backroundHeight))
 
             # Cast image type to CMUImage to allow for faster drawing
@@ -196,6 +197,10 @@ def reset(app):
         app.rocks = []
         generateRocks(app)
 
+    #grid
+    if True:
+        generateGrid(app)
+
 def resetBoss(app):
     app.boss1.x = 0
     app.boss1.y = 0
@@ -252,6 +257,8 @@ def redrawAll(app):
 
     drawRocks(app)
 
+    drawGrid(app)
+
     if app.charHealth:
         drawCharacter(app)
 
@@ -280,7 +287,7 @@ def redrawAll(app):
 #DRAWING MAP
 def drawMap(app):
     
-    drawRect(app.width/2-app.frameshiftX, app.gameHeight-app.frameshiftY, 2000, 2000, align = "center", fill = "lightblue")
+    drawRect(app.width/2-app.frameshiftX, app.gameHeight-app.frameshiftY, 1000, 1000, align = "center", fill = "lightblue")
     # drawPILImage takes in a PIL image object and the left-top coordinates
     drawImage(app.backround, app.width/2-app.frameshiftX, app.gameHeight/2-app.frameshiftY, align = "center")
 
@@ -643,7 +650,7 @@ def checkCharacterCollision(app):
 
         rockX = rock[0] - app.frameshiftX
         rockY = rock[1] - app.frameshiftY
-        spaceBetweenTwo = rock[2] + 10 + app.charSize
+        spaceBetweenTwo = rock[2] + app.charSize
 
         deltaX = (app.charX-rockX)
         deltaY = (app.charY-rockY)
@@ -659,6 +666,7 @@ def checkCharacterCollision(app):
             pass
         elif hypotenuse < spaceBetweenTwo:
 
+            stopMoving(app)
             app.frameshiftX += deltaX/hypotenuse * pushDistance
             app.frameshiftY -= deltaY/hypotenuse * pushDistance
 
@@ -667,7 +675,7 @@ def checkBossCollision(app):
 
         rockX = rock[0]
         rockY = rock[1]
-        spaceBetweenTwo = rock[2] + 10 + app.boss1.size
+        spaceBetweenTwo = rock[2] + app.boss1.size
 
         deltaX = (app.boss1.x-rockX)
         deltaY = (app.boss1.y-rockY)
@@ -710,6 +718,47 @@ def inRect(app, centerX, centerY, height, width, pointerX, pointerY):
     if leftBound < pointerX < rightBound and topBound < pointerY < botBound:
         return True
     return False
+
+#=======================================
+#pathfinding
+#=======================================
+
+# def generateGrid(app):
+
+#     app.blockWidth = 100
+#     app.blockHeight = 100
+
+#     numBlocksWide = app.backroundWidth//app.blockWidth
+#     numBlocksHigh = app.backroundHeight//app.blockHeight
+
+#     app.matrix = []
+
+#     for j in range(numBlocksHigh):
+#         app.matrix.append([])
+#         for k in range(numBlocksWide):
+#             app.matrix[j].append([None])
+
+# def drawGrid(app):
+
+#     numBlocksHigh = len(app.matrix)
+#     numBlocksWide = len(app.matrix[0])
+
+#     x = app.width/2 - app.backroundWidth
+#     y = app.gameHeight/2 - app.backroundHeight
+
+#     for j in range(numBlocksHigh):
+#         y += app.blockHeight
+#         for k in range(numBlocksWide):
+#             x += app.blockWidth
+#             drawRect(x - app.frameshiftX, y - app.frameshiftY, 9, 9, border = "black", fill = "pink", opacity = 50)
+
+
+# def pathfinding(app):
+
+#     open = set()
+#     closed = set()
+
+    # pass
 
 #=======================================
 #MAIN
