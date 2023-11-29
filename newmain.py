@@ -53,6 +53,16 @@ class lasers:
         self.setCD = 50
         self.currentCD = 0
 
+class Node:
+
+    def __init__(self):
+        self.gCost = None
+        self.hCost = None
+        self.fCost = None
+        self.color = "lightgreen"
+
+    def getfCost(self):
+        self.fCost = self.gCost + self.hCost
 #==============================================================================
 #==============================================================================
 #START
@@ -115,8 +125,8 @@ def reset(app):
             app.backround = Image.open('images/grass.gif')
 
             #makes the size of the backround
-            app.backroundWidth = 3000
-            app.backroundHeight = 3000
+            app.backroundWidth = 1000
+            app.backroundHeight = 1000
             app.backround = app.backround.resize((app.backroundWidth, app.backroundHeight))
 
             # Cast image type to CMUImage to allow for faster drawing
@@ -241,7 +251,7 @@ def redrawAll(app):
 #DRAWING MAP
 def drawMap(app):
     
-    drawRect(app.width/2-app.frameshiftX, app.gameHeight-app.frameshiftY, 1000, 1000, align = "center", fill = "lightblue")
+    drawRect(app.width/2-app.frameshiftX, app.gameHeight/2-app.frameshiftY, app.backroundWidth+1000, app.backroundHeight+1000, align = "center", fill = "lightblue")
     # drawPILImage takes in a PIL image object and the left-top coordinates
     drawImage(app.backround, app.width/2-app.frameshiftX, app.gameHeight/2-app.frameshiftY, align = "center")
 
@@ -379,6 +389,7 @@ def onMousePress(app, mouseX, mouseY, button):
     
     if app.situation == 0:
         if button == 2:
+            findTargetNode(app)
             setMoveTo(app, mouseX, mouseY)
 
     elif app.situation == 2:
@@ -410,10 +421,13 @@ def setTarget(app, mouseX, mouseY):
     #sets app.targetCoords, app.targetDistance, app.character1.targetAngle
 
     #makes sure the point is in bounds
-    res = pointInBounds(app, mouseX, mouseY)
-    app.targetCoords = res[1]
-    deltaX = res[0][0]
-    deltaY = res[0][1]
+
+    deltaX = mouseX - app.charX
+    deltaY = mouseY - app.charY
+
+    deltaY = -deltaY
+
+    app.targetCoords = [mouseX, mouseY]
 
     hypotenuse = pythagoreanTheorem(deltaX, deltaY)
 
@@ -427,17 +441,6 @@ def setTarget(app, mouseX, mouseY):
     else:
         app.targetAngle = math.pi - math.asin(deltaY/hypotenuse)
 
-def pointInBounds(app, mouseX, mouseY):
-    #makes sure the character is in bounds of the map
-    #calculates the position of the chracter relative to the center of the backorund image
-    #if the character is too far away in either direction, reset the coordinates to that of the bound
-
-    deltaX = mouseX - app.charX
-    deltaY = mouseY - app.charY
-
-    deltaY = -deltaY
-
-    return [[deltaX, deltaY], [mouseX, mouseY]]
 #=======================================
 #onStep
 #=======================================     
@@ -470,6 +473,9 @@ def onStep(app):
 
         #GIF
         animateChar(app)
+
+        #nodes
+        findCharNode(app)
 
 #decreases ability cooldowns
 def abilityCooldowns(app):
@@ -622,38 +628,84 @@ def inRect(app, centerX, centerY, height, width, pointerX, pointerY):
 
 def generateGrid(app):
 
-    app.blockWidth = 100
-    app.blockHeight = 100
+    #variables
+    if True:
+        app.nodeWidth = 100
+        app.nodeHeight = 100
+        app.numBlocksWide = app.backroundWidth//app.nodeWidth
+        app.numBlocksHigh = app.backroundHeight//app.nodeHeight
+        app.matrix = []
+        app.charNode = None
 
-    numBlocksWide = app.backroundWidth//app.blockWidth
-    numBlocksHigh = app.backroundHeight//app.blockHeight
-
-    app.matrix = []
-
-    for j in range(numBlocksHigh):
+    for j in range(app.numBlocksHigh):
         app.matrix.append([])
-        for k in range(numBlocksWide):
-            app.matrix[j].append([None])
+        for k in range(app.numBlocksWide):
+            app.matrix[j].append(Node())
 
 def drawGrid(app):
 
-    numBlocksHigh = len(app.matrix)
-    numBlocksWide = len(app.matrix[0])
+    setX = app.width/2 - app.backroundWidth/2
+    y = app.gameHeight/2 - app.backroundHeight/2
 
-    x = app.width/2 - app.backroundWidth
-    y = app.gameHeight/2 - app.backroundHeight
+    for j in range(app.numBlocksHigh):
+        x = setX
+        for k in range(app.numBlocksWide):
+    
+            #sets the color of the node
+            color = app.matrix[j][k].color
 
-    for j in range(numBlocksHigh):
-        y += app.blockHeight
-        for k in range(numBlocksWide):
-            x += app.blockWidth
-            drawRect(x - app.frameshiftX, y - app.frameshiftY, 9, 9, border = "black", fill = "pink", opacity = 50)
+            drawRect(x - app.frameshiftX, y - app.frameshiftY, app.nodeWidth, app.nodeHeight, border = "black", fill = color, opacity = 30)
+            x += app.nodeWidth
 
+        y += app.nodeHeight
+
+#returns a tuple of the coordinates that the chracter is in
+def findCharNode(app):
+
+    x = app.frameshiftX + app.backroundWidth/2
+    y = app.frameshiftY + app.backroundHeight/2
+
+    col = int(x // app.nodeWidth)
+    row = int(y // app.nodeHeight)
+
+    #checks to see if the node is in bounds of the grid
+    if 0 <= col < app.numBlocksWide and 0 <= row < app.numBlocksHigh:
+        if app.charNode:
+            app.charNode.color = "lightgreen"
+        app.charNode = app.matrix[row][col]
+        app.charNode.color = "blue"
+
+#returns a tuple of the coordinates that the boss is in
+def findTargetNode(app):
+
+    targetX = app.targetCoords[0]
+    targetY = app.targetCoords[1]
+
+    deltaX = targetX - app.charX
+    deltaY = targetY - app.charY
+
+    xDistanceFromCenterToTopLeft = app.frameshiftX + app.backroundWidth/2
+    yDistanceFromCenterToTopLeft = app.frameshiftY + app.backroundHeight/2
+
+    x = deltaX + xDistanceFromCenterToTopLeft
+    y = deltaY + yDistanceFromCenterToTopLeft
+
+    col = int(x // app.nodeWidth )
+    row = int(y // app.nodeHeight )
+
+    #checks to see if the node is in bounds of the grid
+    if 0 <= col < app.numBlocksWide and 0 <= row < app.numBlocksHigh:
+
+        return (x, y)
 
 def pathfinding(app):
 
-    open = set()
-#     closed = set()
+    open = []
+    closed = []
+
+
+    # while True:
+
 
     # pass
 
