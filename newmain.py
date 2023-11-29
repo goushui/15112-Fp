@@ -17,7 +17,7 @@ to do
 
 
 
-citations:
+Citations:
 - game idea from Vampire Survivors
 - framseshift got the idea of moving all the things on the screen from 2022 page
 - Gif animation code from F23_demos 11/21 Lecture
@@ -35,6 +35,8 @@ class boss:
         self.speed = 1
         self.x = 0
         self.y = 0
+        self.lastX = 0
+        self.lastY = 0
         self.size = 30
         self.color = "purple"
         self.respawnTimer = 1
@@ -56,6 +58,7 @@ class lasers:
 class Node:
 
     def __init__(self, x, y):
+        #grid values
         self.x = x
         self.y = y
 
@@ -75,7 +78,7 @@ class Node:
         self.hCost = self.distanceBetweenTwoNodes(self, targetNode)
         self.fCost = self.gCost + self.hCost
 
-    def distanceBetweenTwoNodes(self, other):
+    def straightDistanceBetweenTwoNodes(self, other):
                                 
         if other.isinsannce(Node):
 
@@ -520,11 +523,15 @@ def onStep(app):
         animateChar(app)
 
         #nodes
+        findBossNode(app)
         findCharNode(app)
 
-        #updates last frameshift
+        #updates last coordinates if collision
         app.lastFrameshiftX = app.frameshiftX
         app.lastFrameshiftY = app.frameshiftY
+
+        app.boss1.lastX = app.boss1.x
+        app.boss1.lastY = app.boss1.y
 
 #decreases ability cooldowns
 def abilityCooldowns(app):
@@ -690,7 +697,7 @@ def generateWalls(app):
 #pathfinding
 #=======================================
 
-
+#creates a gird of node objects
 def generateGrid(app):
 
     #variables
@@ -702,12 +709,14 @@ def generateGrid(app):
         app.matrix = []
         app.charNode = None
         app.targetNode = None
+        app.bossNode = None
 
     for j in range(app.numBlocksHigh):
         app.matrix.append([])
         for k in range(app.numBlocksWide):
             app.matrix[j].append(Node(k, j))
 
+#draws the grid of node objects
 def drawGrid(app):
 
     setX = app.width/2 - app.backroundWidth/2
@@ -740,11 +749,32 @@ def findCharNode(app):
         if app.matrix[row][col].traversable == False:
             app.frameshiftX = app.lastFrameshiftX
             app.frameshiftY = app.lastFrameshiftY
+        else:
+            if app.charNode:
+                app.charNode.color = app.charNode.baseColor
+            app.charNode = app.matrix[row][col]
+            app.charNode.color = "blue"
 
-        if app.charNode:
-            app.charNode.color = app.charNode.baseColor
-        app.charNode = app.matrix[row][col]
-        app.charNode.color = "blue"
+#returns a tuple of the coordinates that the boss is in
+def findBossNode(app):
+
+    x = app.boss1.x + app.backroundWidth/2 - app.width/2
+    y = app.boss1.y + app.backroundHeight/2 - app.gameHeight/2
+
+    col = int(x // app.nodeWidth)
+    row = int(y // app.nodeHeight)
+
+    #checks to see if the node is in bounds of the grid
+    if 0 <= col < app.numBlocksWide and 0 <= row < app.numBlocksHigh:
+
+        if app.matrix[row][col].traversable == False:
+            app.boss1.x = app.boss1.lastX
+            app.boss1.y = app.boss1.lastY
+        else:
+            if app.bossNode:
+                app.bossNode.color = app.bossNode.baseColor
+            app.bossNode = app.matrix[row][col]
+            app.bossNode.color = "purple"
 
 #returns a tuple of the coordinates that the boss is in
 def findTargetNode(app):
@@ -771,27 +801,31 @@ def findTargetNode(app):
         app.targetNode = app.matrix[row][col]
         app.targetNode.color = "red"
         return (x, y)
-"""
+    
+
+#A* pathfinding algorithm
 def pathfinding(app):
 
     open = []
     closed = []
     open.append(app.charNode)
+    
+    while len(open) > 0:
 
-    while True:
+        #sets cur to the node in open that has the lowest f-cost
+        cur == open[0]
+        for i in range(1, len(open)):
+            if open[i].fCost < cur.fCost:
+                cur = open[i]
+            elif open[i].fCost == cur.fCost:
+                if open[i].hCost < cur.hCost:
+                    cur = open[i]
 
-        minFCostNodeList = [0]
-        for i in range(len(open)):
-            if open[i].fCost < minFCostNodeList[0].fCost:
-                minFCostNodeList = [i]
-            elif open[i].fCost == minFCostNodeList[0].fCost:
-                minFCostNodeList.append(i)
-
-        cur = open.pop(0)
+        open.remove(cur)
         closed.append(cur)
 
         if cur == app.targetNode:
-            return 
+            return "Done"
         
         #gets the coordinates of the cur node
         curX = cur.x
@@ -804,11 +838,12 @@ def pathfinding(app):
                     neighbor = app.matrix[curX + dx][curY + dy]
 
                     #pass if the neighbor is not a legal move
-                    if neighbor.traversable == False or canWalkTo == False or neighbor in closed:
-                        pass
+                    if canWalkTo(app, cur, neighbor) == False or neighbor in closed:
+                        continue
                     
                     else:
-                        if neighbor in open "and is a short path" or neighbor not in open:#edit
+                        hCost = walkableDistanceBetweenTwoNodes(app, app.charNode, neighbor)
+                        if neighbor in open and  or neighbor not in open:#edit
                             neighbor.clacCost(app.startingNode, app.targetNode)
                             neighbor.parent = cur
 
@@ -820,7 +855,48 @@ def pathfinding(app):
 
 
     # pass
-"""
+
+
+def canWalkTo(app, startingNode, targetNode):
+
+    #if the target Node is not traversable
+    if targetNode.traversable == False:
+        return False
+    
+    #if the target node is diagonal but there is a corner Node in the way
+    #can't move diagonally across corners
+    dx = targetNode.x - startingNode.x
+    dy = targetNode.y - startingNode.y
+
+    if dx != 0 and dy != 0:
+
+        sideNode1 = app.matrix[startingNode.y][targetNode.x]
+        sideNode2 = app.matrix[targetNode.y][startingNode.x]
+
+        if sideNode1.traversable == False or sideNode2.traversable == False:
+            return False
+
+    return True
+
+def walkableDistanceBetweenTwoNodes(app, startNode, curNode):
+    #finds the g-cost of a Node by tracing through its parents until it gets to starting node
+    sum = 0
+
+    dx = curNode.x - curNode.parent.x
+    dy = curNode.y - curNode.parent.y
+
+    while curNode != startNode:
+
+        if dx != 0 and dy != 0:
+            sum += 14
+        elif dx != 0 or dy != 0:
+            sum += 10
+
+        curNode = curNode.parent
+    
+
+
+
 
 #=======================================
 #MAIN
