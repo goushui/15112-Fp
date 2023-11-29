@@ -65,6 +65,9 @@ class Node:
 
         self.traversable = True
 
+        self.parent = None
+
+        self.baseColor = "lightgreen"
         self.color = "lightgreen"
 
     def clacCost(self, startingNode, targetNode):
@@ -94,11 +97,12 @@ class Node:
 
             return sum
 
-    
-
     def __eq__(self, other):
 
         return other.isinstance(Node) and self.x == other.x and self.y == other.y
+
+    def __hash__(self):
+        return hash((self.x, self.y))
 
 #==============================================================================
 #==============================================================================
@@ -153,6 +157,9 @@ def reset(app):
     if True:
         app.frameshiftX = 0
         app.frameshiftY = 0
+
+        app.lastFrameshiftX = 0
+        app.lastFrameshiftY = 0
 
     #Images====================================================================
     if True:
@@ -242,6 +249,7 @@ def reset(app):
     #grid
     if True:
         generateGrid(app)
+        generateWalls(app)
 
 def resetBoss(app):
     app.boss1.x = 0
@@ -514,6 +522,10 @@ def onStep(app):
         #nodes
         findCharNode(app)
 
+        #updates last frameshift
+        app.lastFrameshiftX = app.frameshiftX
+        app.lastFrameshiftY = app.frameshiftY
+
 #decreases ability cooldowns
 def abilityCooldowns(app):
 
@@ -660,8 +672,24 @@ def inRect(app, centerX, centerY, height, width, pointerX, pointerY):
     return False
 
 #=======================================
+#walls
+#=======================================
+
+def generateWalls(app):
+
+    app.walls = set()
+
+    c = 6
+    for r in range(3, 7):
+        app.matrix[r][c].traversable = False
+        app.matrix[r][c].color = "black"
+        app.matrix[r][c].baseColor = "black"
+        app.walls.add(app.matrix[r][5])
+
+#=======================================
 #pathfinding
 #=======================================
+
 
 def generateGrid(app):
 
@@ -708,8 +736,13 @@ def findCharNode(app):
 
     #checks to see if the node is in bounds of the grid
     if 0 <= col < app.numBlocksWide and 0 <= row < app.numBlocksHigh:
+
+        if app.matrix[row][col].traversable == False:
+            app.frameshiftX = app.lastFrameshiftX
+            app.frameshiftY = app.lastFrameshiftY
+
         if app.charNode:
-            app.charNode.color = "lightgreen"
+            app.charNode.color = app.charNode.baseColor
         app.charNode = app.matrix[row][col]
         app.charNode.color = "blue"
 
@@ -733,9 +766,12 @@ def findTargetNode(app):
 
     #checks to see if the node is in bounds of the grid
     if 0 <= col < app.numBlocksWide and 0 <= row < app.numBlocksHigh:
-        app.targetNode = app.matrix[y][x]
+        if app.targetNode:
+            app.targetNode.color = app.targetNode.baseColor
+        app.targetNode = app.matrix[row][col]
+        app.targetNode.color = "red"
         return (x, y)
-
+"""
 def pathfinding(app):
 
     open = []
@@ -767,18 +803,24 @@ def pathfinding(app):
                 if (dx, dy) != (0, 0):
                     neighbor = app.matrix[curX + dx][curY + dy]
 
-                    if neighbor.traversable == False or neighbor in closed:
+                    #pass if the neighbor is not a legal move
+                    if neighbor.traversable == False or canWalkTo == False or neighbor in closed:
                         pass
+                    
                     else:
-                        if neighbor in open and or neighbor not in open:
-                            #calc g Cost
+                        if neighbor in open "and is a short path" or neighbor not in open:#edit
+                            neighbor.clacCost(app.startingNode, app.targetNode)
+                            neighbor.parent = cur
 
+                            if neighbor not in open:
+                                open.append(neighbor)
         
 
 
 
 
     # pass
+"""
 
 #=======================================
 #MAIN
