@@ -116,8 +116,8 @@ def reset(app):
             app.backround = Image.open('images/grass.gif')
 
             #makes the size of the backround
-            app.backroundWidth = 1000
-            app.backroundHeight = 1000
+            app.backroundWidth = 3000
+            app.backroundHeight = 3000
             app.backround = app.backround.resize((app.backroundWidth, app.backroundHeight))
 
             # Cast image type to CMUImage to allow for faster drawing
@@ -723,39 +723,39 @@ def inRect(app, centerX, centerY, height, width, pointerX, pointerY):
 #pathfinding
 #=======================================
 
-# def generateGrid(app):
+def generateGrid(app):
 
-#     app.blockWidth = 100
-#     app.blockHeight = 100
+    app.blockWidth = 100
+    app.blockHeight = 100
 
-#     numBlocksWide = app.backroundWidth//app.blockWidth
-#     numBlocksHigh = app.backroundHeight//app.blockHeight
+    numBlocksWide = app.backroundWidth//app.blockWidth
+    numBlocksHigh = app.backroundHeight//app.blockHeight
 
-#     app.matrix = []
+    app.matrix = []
 
-#     for j in range(numBlocksHigh):
-#         app.matrix.append([])
-#         for k in range(numBlocksWide):
-#             app.matrix[j].append([None])
+    for j in range(numBlocksHigh):
+        app.matrix.append([])
+        for k in range(numBlocksWide):
+            app.matrix[j].append([None])
 
-# def drawGrid(app):
+def drawGrid(app):
 
-#     numBlocksHigh = len(app.matrix)
-#     numBlocksWide = len(app.matrix[0])
+    numBlocksHigh = len(app.matrix)
+    numBlocksWide = len(app.matrix[0])
 
-#     x = app.width/2 - app.backroundWidth
-#     y = app.gameHeight/2 - app.backroundHeight
+    x = app.width/2 - app.backroundWidth
+    y = app.gameHeight/2 - app.backroundHeight
 
-#     for j in range(numBlocksHigh):
-#         y += app.blockHeight
-#         for k in range(numBlocksWide):
-#             x += app.blockWidth
-#             drawRect(x - app.frameshiftX, y - app.frameshiftY, 9, 9, border = "black", fill = "pink", opacity = 50)
+    for j in range(numBlocksHigh):
+        y += app.blockHeight
+        for k in range(numBlocksWide):
+            x += app.blockWidth
+            drawRect(x - app.frameshiftX, y - app.frameshiftY, 9, 9, border = "black", fill = "pink", opacity = 50)
 
 
-# def pathfinding(app):
+def pathfinding(app):
 
-#     open = set()
+    open = set()
 #     closed = set()
 
     # pass
