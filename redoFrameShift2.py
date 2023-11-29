@@ -50,8 +50,8 @@ class lasers:
         self.color = "red"
         self.width = 2
         self.speed = 10
-        self.cD = 50
-        self.currentcD = 0
+        self.setCD = 50
+        self.currentCD = 0
 
 #==============================================================================
 #==============================================================================
@@ -78,7 +78,7 @@ def reset(app):
 
     #character variables
     if True:
-        app.charSpeed = 3
+        app.charSpeed = 50
         app.charTotalHealth = 100
         app.charHealth = 100
         app.charX = app.width/2
@@ -158,8 +158,8 @@ def reset(app):
             app.charSpriteCounter2 = 0
 
         #boss facing right
-        if True:
-            myGif = Image.open('images/kirb2.gif')
+
+            myGif = Image.open('images/kirb.gif')
             app.bossSpriteList1 = []
             for frame in range(myGif.n_frames):
                 #Set the current frame
@@ -191,10 +191,55 @@ def reset(app):
                 app.bossSpriteList2.append(fr)
             app.bossSpriteCounter2 = 0
 
+    #rocks
+    if True:
+        app.rocks = []
+        generateRocks(app)
+
+
+
 def resetBoss(app):
     app.boss1.x = 0
     app.boss1.y = 0
     app.boss1.health = app.boss1.totalHealth
+
+#creates rocks
+def generateRocks(app):
+    #randomly generates rocks of different sizes across the map
+    #rocks cannot spawn in the center where the character spawns in
+    
+    numRocks = random.randint(1, 200)
+
+    for i in range(numRocks):
+
+        mapLeftBound = app.width/2 - app.backroundWidth/2 + 300
+        mapRightBound = app.width/2 + app.backroundWidth/2 - 300
+
+        mapTopBound = app.gameHeight/2 - app.backroundHeight/2 + 300
+        mapBottomtBound = app.gameHeight/2 + app.backroundHeight/2 - 300
+
+        spawnLeftBound = app.width/2/2 - 300
+        spawnRightBound = app.width/2 + 300
+
+        spawnTopBound = app.gameHeight - 300
+        spawnBottomtBound = app.gameHeight/2 + 300
+
+        rand1 = random.randint(1, 2)
+        if rand1 == 1:
+            x = random.randint(mapLeftBound, spawnLeftBound)
+        else:
+            x = random.randint(spawnRightBound, mapRightBound)
+
+        rand2 = random.randint(1, 2)
+        if rand2 == 1:
+            y = random.randint(mapTopBound, spawnTopBound)
+        else:
+            y = random.randint(spawnBottomtBound, mapBottomtBound)
+
+        size = random.randint(100, 200)
+
+        app.rocks.append([x , y , size])
+
 #==============================================================================
 #==============================================================================
 #DRAWING
@@ -205,12 +250,17 @@ def redrawAll(app):
 
     drawMap(app)
 
+    drawRocks(app)
+
     if app.charHealth:
         drawCharacter(app)
 
     if app.boss1.health:
         drawBoss(app)
         drawBossHealthbar(app)
+
+    if app.lasers1.lasers:
+        drawLasers(app)
 
     #game over screen
     if app.situation == 1:
@@ -226,7 +276,6 @@ def redrawAll(app):
 #==========================================================================
 #DRAWING HELPER FUNTIONS
 #==========================================================================
-
 
 #DRAWING MAP
 def drawMap(app):
@@ -289,8 +338,6 @@ def drawBoss(app):
     x = app.boss1.x - app.frameshiftX
     y = app.boss1.y - app.frameshiftY
 
-    print(x, y)
-
     if abs(app.boss1.targetAngle) < math.pi/2:
         drawImage(app.bossSpriteList1[app.bossSpriteCounter1], x , y, align = 'center')
     else:
@@ -318,6 +365,23 @@ def drawBossHealthbar(app):
         
     drawLabel(f'{app.boss1.health} / {app.boss1.totalHealth}', app.width/2, 40, size = 20)
 
+#drawRocks
+def drawRocks(app):
+
+    for i in range(len(app.rocks)):
+        drawCircle(app.rocks[i][0] - app.frameshiftX, app.rocks[i][1] - app.frameshiftY, app.rocks[i][2], fill = "grey")
+
+#LASERS   
+def drawLasers(app):
+    for laser in app.lasers1.lasers:
+        laserXStart = laser[0] - math.cos(laser[2]) * 7
+        laserYStart = laser[1] + math.sin(laser[2]) * 7
+        
+        laserXEnd = laser[0] + math.cos(laser[2]) * 7
+        laserYEnd = laser[1] - math.sin(laser[2]) * 7
+        
+        drawLine(laserXStart - app.frameshiftX, laserYStart - app.frameshiftY, laserXEnd - app.frameshiftX, laserYEnd - app.frameshiftY, fill = app.lasers1.color, lineWidth = app.lasers1.width)
+
 #==============================================================================
 #==============================================================================
 #CONTROLLERS
@@ -337,6 +401,11 @@ def onKeyPress(app, key):
 
         elif key == 's':
             stopMoving(app)
+        #lazers
+        elif key == 'q' and app.lasers1.currentCD == 0:
+            app.lasers1.currentCD = app.lasers1.setCD
+            app.lasers1.lasers.append([app.charX + app.frameshiftX, app.charY + app.frameshiftY, app.targetAngle, 0])
+
 
     elif app.situation == 1:
         if key == 'l':
@@ -426,6 +495,7 @@ def onStep(app):
         pass
     else:
         app.time += 1
+        abilityCooldowns(app)
 
         if app.charIsMoving:
             characterMove(app)
@@ -439,8 +509,17 @@ def onStep(app):
         if app.boss1.health:
             bossMove(app)
 
+        if len(app.lasers1.lasers) > 0:
+            moveLasers(app)
+
         #GIF
         animateChar(app)
+
+#decreases ability cooldowns
+def abilityCooldowns(app):
+
+    if app.lasers1.currentCD > 0:
+        app.lasers1.currentCD -= 1
 
 #finds the distance between where the chracter is moving to and the character and checks that it is higher then the chracter speed
 def characterMove(app):
@@ -528,6 +607,31 @@ def checkBossDead(app):
         app.boss1.health = 0
         app.boss1.respawnTimer = 200   
         app.kills += 1    
+
+
+#loops through all the lazers and moves them
+#checks if any lazers collide with the boss and deals damage to the boss if so
+def moveLasers(app):
+
+    i = 0
+    while i < len(app.lasers1.lasers):
+
+        app.lasers1.lasers[i][0] += math.cos(app.lasers1.lasers[i][2]) * app.lasers1.speed
+        app.lasers1.lasers[i][1] -= math.sin(app.lasers1.lasers[i][2]) * app.lasers1.speed
+        
+        #if lazer hits boss
+        if app.boss1.health and distance(app, app.boss1.x, app.boss1.y, app.lasers1.lasers[i][0], app.lasers1.lasers[i][1]) < app.boss1.size: 
+
+            #does damage
+            app.boss1.health -= app.lasers1.dmg
+            app.lasers1.lasers.pop(i)
+            checkBossDead(app)
+        
+        elif app.lasers1.lasers[i][3] >= 200:
+            app.lasers1.lasers.pop(i)
+        else:
+            app.lasers1.lasers[i][3] += 1
+            i+=1
 
 #=======================================
 #GENERAL HELPER FUNTIONS
