@@ -35,7 +35,7 @@ class boss:
         self.speed = 1
         self.x = 0
         self.y = 0
-        self.size = 40
+        self.size = 30
         self.color = "purple"
         self.respawnTimer = 1
         self.slowness = 0
@@ -78,12 +78,12 @@ def reset(app):
 
     #character variables
     if True:
-        app.charSpeed = 50
+        app.charSpeed = 3
         app.charTotalHealth = 100
         app.charHealth = 100
         app.charX = app.width/2
         app.charY = app.gameHeight/2
-        app.size = 10
+        app.charSize = 30
         app.charIsMoving = False
 
         #direction
@@ -196,8 +196,6 @@ def reset(app):
         app.rocks = []
         generateRocks(app)
 
-
-
 def resetBoss(app):
     app.boss1.x = 0
     app.boss1.y = 0
@@ -208,10 +206,11 @@ def generateRocks(app):
     #randomly generates rocks of different sizes across the map
     #rocks cannot spawn in the center where the character spawns in
     
-    numRocks = random.randint(1, 200)
+    numRocks = random.randint(1, 100)
 
     for i in range(numRocks):
 
+        #creates boundaries for where the rocks can spawn
         mapLeftBound = app.width/2 - app.backroundWidth/2 + 300
         mapRightBound = app.width/2 + app.backroundWidth/2 - 300
 
@@ -224,6 +223,7 @@ def generateRocks(app):
         spawnTopBound = app.gameHeight - 300
         spawnBottomtBound = app.gameHeight/2 + 300
 
+        #randomly generates rock spawn points
         rand1 = random.randint(1, 2)
         if rand1 == 1:
             x = random.randint(mapLeftBound, spawnLeftBound)
@@ -280,7 +280,7 @@ def redrawAll(app):
 #DRAWING MAP
 def drawMap(app):
     
-    drawRect(app.width/2-app.frameshiftX, app.gameHeight-app.frameshiftY, 7000, 7000, align = "center", fill = "lightblue")
+    drawRect(app.width/2-app.frameshiftX, app.gameHeight-app.frameshiftY, 2000, 2000, align = "center", fill = "lightblue")
     # drawPILImage takes in a PIL image object and the left-top coordinates
     drawImage(app.backround, app.width/2-app.frameshiftX, app.gameHeight/2-app.frameshiftY, align = "center")
 
@@ -374,6 +374,7 @@ def drawRocks(app):
 #LASERS   
 def drawLasers(app):
     for laser in app.lasers1.lasers:
+        #creates start and end points for the lasets
         laserXStart = laser[0] - math.cos(laser[2]) * 7
         laserYStart = laser[1] + math.sin(laser[2]) * 7
         
@@ -499,6 +500,7 @@ def onStep(app):
 
         if app.charIsMoving:
             characterMove(app)
+            checkCharacterCollision(app)
 
         #SPAWNS BOSS AT TIME
         if app.boss1.health == 0:
@@ -508,6 +510,7 @@ def onStep(app):
 
         if app.boss1.health:
             bossMove(app)
+            checkBossCollision(app)
 
         if len(app.lasers1.lasers) > 0:
             moveLasers(app)
@@ -581,7 +584,7 @@ def bossMove(app):
             graphicsHorizontalMovement = deltaX/hypotenuse * app.boss1.speed
             graphicsVerticalMovement = -(deltaY/hypotenuse * app.boss1.speed)
 
-            #frameShift Boss
+            #move Boss
             app.boss1.x += graphicsHorizontalMovement
             app.boss1.y += graphicsVerticalMovement
             
@@ -608,7 +611,6 @@ def checkBossDead(app):
         app.boss1.respawnTimer = 200   
         app.kills += 1    
 
-
 #loops through all the lazers and moves them
 #checks if any lazers collide with the boss and deals damage to the boss if so
 def moveLasers(app):
@@ -619,7 +621,7 @@ def moveLasers(app):
         app.lasers1.lasers[i][0] += math.cos(app.lasers1.lasers[i][2]) * app.lasers1.speed
         app.lasers1.lasers[i][1] -= math.sin(app.lasers1.lasers[i][2]) * app.lasers1.speed
         
-        #if lazer hits boss
+        #if laser hits boss
         if app.boss1.health and distance(app, app.boss1.x, app.boss1.y, app.lasers1.lasers[i][0], app.lasers1.lasers[i][1]) < app.boss1.size: 
 
             #does damage
@@ -627,11 +629,63 @@ def moveLasers(app):
             app.lasers1.lasers.pop(i)
             checkBossDead(app)
         
+
+        #lasers expires after some time
         elif app.lasers1.lasers[i][3] >= 200:
             app.lasers1.lasers.pop(i)
         else:
             app.lasers1.lasers[i][3] += 1
             i+=1
+
+#checks if something has collided with a rock and pushes the object back accordingly
+def checkCharacterCollision(app):
+    for rock in app.rocks:
+
+        rockX = rock[0] - app.frameshiftX
+        rockY = rock[1] - app.frameshiftY
+        spaceBetweenTwo = rock[2] + 10 + app.charSize
+
+        deltaX = (app.charX-rockX)
+        deltaY = (app.charY-rockY)
+
+        deltaY = -deltaY
+
+        hypotenuse = pythagoreanTheorem(deltaX, deltaY)
+
+        pushDistance = spaceBetweenTwo - hypotenuse 
+
+        #make sure no crash
+        if hypotenuse == 0:
+            pass
+        elif hypotenuse < spaceBetweenTwo:
+
+            app.frameshiftX += deltaX/hypotenuse * pushDistance
+            app.frameshiftY -= deltaY/hypotenuse * pushDistance
+
+def checkBossCollision(app):
+    for rock in app.rocks:
+
+        rockX = rock[0]
+        rockY = rock[1]
+        spaceBetweenTwo = rock[2] + 10 + app.boss1.size
+
+        deltaX = (app.boss1.x-rockX)
+        deltaY = (app.boss1.y-rockY)
+
+        deltaY = -deltaY
+
+        hypotenuse = pythagoreanTheorem(deltaX, deltaY)
+
+        pushDistance = spaceBetweenTwo - hypotenuse 
+
+        #make sure no crash
+        if hypotenuse == 0:
+            pass
+        elif hypotenuse < spaceBetweenTwo:
+
+            app.boss1.x += deltaX/hypotenuse * pushDistance
+            app.boss1.y -= deltaY/hypotenuse * pushDistance
+
 
 #=======================================
 #GENERAL HELPER FUNTIONS
@@ -664,40 +718,6 @@ def main():
     runApp()
 
 main()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
