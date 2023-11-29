@@ -55,14 +55,51 @@ class lasers:
 
 class Node:
 
-    def __init__(self):
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
         self.gCost = None
         self.hCost = None
         self.fCost = None
+
+        self.traversable = True
+
         self.color = "lightgreen"
 
-    def getfCost(self):
+    def clacCost(self, startingNode, targetNode):
+        self.gCost = self.distanceBetweenTwoNodes(self, startingNode)
+        self.hCost = self.distanceBetweenTwoNodes(self, targetNode)
         self.fCost = self.gCost + self.hCost
+
+    def distanceBetweenTwoNodes(self, other):
+                                
+        if other.isinsannce(Node):
+
+            sum = 0
+
+            deltaX = abs(self.x - other.x)
+            deltaY = abs(self.y - other.y)
+
+            #summing up diagonal lengths
+            while deltaX > 0 and deltaY > 0:
+                deltaX -= 1
+                deltaY -= 1
+
+                sum += 14
+
+            #summing up axial lengths
+            sum += (deltaX * 10)
+            sum += (deltaY * 10)
+
+            return sum
+
+    
+
+    def __eq__(self, other):
+
+        return other.isinstance(Node) and self.x == other.x and self.y == other.y
+
 #==============================================================================
 #==============================================================================
 #START
@@ -636,11 +673,12 @@ def generateGrid(app):
         app.numBlocksHigh = app.backroundHeight//app.nodeHeight
         app.matrix = []
         app.charNode = None
+        app.targetNode = None
 
     for j in range(app.numBlocksHigh):
         app.matrix.append([])
         for k in range(app.numBlocksWide):
-            app.matrix[j].append(Node())
+            app.matrix[j].append(Node(k, j))
 
 def drawGrid(app):
 
@@ -695,16 +733,49 @@ def findTargetNode(app):
 
     #checks to see if the node is in bounds of the grid
     if 0 <= col < app.numBlocksWide and 0 <= row < app.numBlocksHigh:
-
+        app.targetNode = app.matrix[y][x]
         return (x, y)
 
 def pathfinding(app):
 
     open = []
     closed = []
+    open.append(app.charNode)
+
+    while True:
+
+        minFCostNodeList = [0]
+        for i in range(len(open)):
+            if open[i].fCost < minFCostNodeList[0].fCost:
+                minFCostNodeList = [i]
+            elif open[i].fCost == minFCostNodeList[0].fCost:
+                minFCostNodeList.append(i)
+
+        cur = open.pop(0)
+        closed.append(cur)
+
+        if cur == app.targetNode:
+            return 
+        
+        #gets the coordinates of the cur node
+        curX = cur.x
+        curY = cur.y
+
+        #loops through the neighbors of the cur node
+        for dx in range(-1, 2):
+            for dy in range(-1, 2):
+                if (dx, dy) != (0, 0):
+                    neighbor = app.matrix[curX + dx][curY + dy]
+
+                    if neighbor.traversable == False or neighbor in closed:
+                        pass
+                    else:
+                        if neighbor in open and or neighbor not in open:
+                            #calc g Cost
+
+        
 
 
-    # while True:
 
 
     # pass
