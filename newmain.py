@@ -73,39 +73,18 @@ class Node:
         self.baseColor = "lightgreen"
         self.color = "lightgreen"
 
-    def clacCost(self, startingNode, targetNode):
-        self.gCost = self.distanceBetweenTwoNodes(self, startingNode)
-        self.hCost = self.distanceBetweenTwoNodes(self, targetNode)
+    def clacFCost(self):
         self.fCost = self.gCost + self.hCost
-
-    def straightDistanceBetweenTwoNodes(self, other):
-                                
-        if other.isinsannce(Node):
-
-            sum = 0
-
-            deltaX = abs(self.x - other.x)
-            deltaY = abs(self.y - other.y)
-
-            #summing up diagonal lengths
-            while deltaX > 0 and deltaY > 0:
-                deltaX -= 1
-                deltaY -= 1
-
-                sum += 14
-
-            #summing up axial lengths
-            sum += (deltaX * 10)
-            sum += (deltaY * 10)
-
-            return sum
 
     def __eq__(self, other):
 
-        return other.isinstance(Node) and self.x == other.x and self.y == other.y
+        return isinstance(other, Node) and self.x == other.x and self.y == other.y
 
     def __hash__(self):
         return hash((self.x, self.y))
+
+    def __repr__(self):
+        return f"{(self.x, self.y)}"
 
 #==============================================================================
 #==============================================================================
@@ -437,8 +416,13 @@ def onMousePress(app, mouseX, mouseY, button):
     
     if app.situation == 0:
         if button == 2:
+            
             findTargetNode(app)
-            setMoveTo(app, mouseX, mouseY)
+            if app.charNode == app.targetNode:
+                setMoveTo(app)
+            else:
+                pathfinding(app, app.charNode, app.targetNode)
+
 
     elif app.situation == 2:
         if button == 0:
@@ -446,7 +430,7 @@ def onMousePress(app, mouseX, mouseY, button):
             # selectUpgrade(app, mouseX, mouseY)
 
 # sets - app.charIsMoving, app.moveToCoords, app.moveToAngle
-def setMoveTo(app, mouseX, mouseY):
+def setMoveTo(app):
 
     app.charIsMoving = True
     app.moveToCoords = app.targetCoords
@@ -502,10 +486,13 @@ def onStep(app):
         pass
     else:
         app.time += 1
+
         abilityCooldowns(app)
 
         if app.charIsMoving:
             characterMove(app)
+        elif len(app.path) > 0:
+            pathfindingMovement(app)
 
         #SPAWNS BOSS AT TIME
         if app.boss1.health == 0:
@@ -532,6 +519,11 @@ def onStep(app):
 
         app.boss1.lastX = app.boss1.x
         app.boss1.lastY = app.boss1.y
+
+
+        if app.time % 60 == 0:
+            print("app.moveToCoords", app.moveToCoords)
+            print("app.moveToAngle", app.moveToAngle)
 
 #decreases ability cooldowns
 def abilityCooldowns(app):
@@ -660,12 +652,9 @@ def moveLasers(app):
 
 def pythagoreanTheorem(x, y):
     return (x**2 + y**2)**0.5
-    
-def roundToThousands(app, num):
-    return rounded(num*1000)/1000
-    
+
 def distance(app, x1, y1, x2, y2):
-    return ((x2-x1)**2 + (y2-y1)**2)**0.5
+    return pythagoreanTheorem(x2-x1, y2-y1)
 
 #checks if a set of coordinates are inside a rectangle
 def inRect(app, centerX, centerY, height, width, pointerX, pointerY):
@@ -711,6 +700,8 @@ def generateGrid(app):
         app.targetNode = None
         app.bossNode = None
 
+        app.path = []
+
     for j in range(app.numBlocksHigh):
         app.matrix.append([])
         for k in range(app.numBlocksWide):
@@ -728,6 +719,10 @@ def drawGrid(app):
     
             #sets the color of the node
             color = app.matrix[j][k].color
+
+            for node in app.path:
+                if (k, j) == (node.x, node.y):
+                    color = "white"
 
             drawRect(x - app.frameshiftX, y - app.frameshiftY, app.nodeWidth, app.nodeHeight, border = "black", fill = color, opacity = 30)
             x += app.nodeWidth
@@ -802,18 +797,18 @@ def findTargetNode(app):
         app.targetNode.color = "red"
         return (x, y)
     
-
 #A* pathfinding algorithm
-def pathfinding(app):
+def pathfinding(app, startNode, endNode):
 
     open = []
     closed = []
-    open.append(app.charNode)
-    
+    open.append(startNode)
+    startNode.gCost = 0
+
     while len(open) > 0:
 
         #sets cur to the node in open that has the lowest f-cost
-        cur == open[0]
+        cur = open[0]
         for i in range(1, len(open)):
             if open[i].fCost < cur.fCost:
                 cur = open[i]
@@ -824,39 +819,35 @@ def pathfinding(app):
         open.remove(cur)
         closed.append(cur)
 
-        if cur == app.targetNode:
-            return "Done"
-        
-        #gets the coordinates of the cur node
-        curX = cur.x
-        curY = cur.y
+        if cur == endNode:
+            return path(app, startNode, endNode)
 
         #loops through the neighbors of the cur node
         for dx in range(-1, 2):
             for dy in range(-1, 2):
                 if (dx, dy) != (0, 0):
-                    neighbor = app.matrix[curX + dx][curY + dy]
+                    neighborY = cur.y + dy
+                    neighborX = cur.x + dx
+                    if 0 <= neighborY < len(app.matrix) and 0 <= neighborX < len(app.matrix[0]):
+                        neighbor = app.matrix[neighborY][neighborX]
 
-                    #pass if the neighbor is not a legal move
-                    if canWalkTo(app, cur, neighbor) == False or neighbor in closed:
-                        continue
-                    
-                    else:
-                        hCost = walkableDistanceBetweenTwoNodes(app, app.charNode, neighbor)
-                        if neighbor in open and  or neighbor not in open:#edit
-                            neighbor.clacCost(app.startingNode, app.targetNode)
-                            neighbor.parent = cur
+                        #pass if the neighbor is not a legal move
+                        if canWalkTo(app, cur, neighbor) == False or neighbor in closed:
+                            continue
+                        else:
+                            potentialNewGCost = cur.gCost + getStraightDistance(cur, neighbor)
 
-                            if neighbor not in open:
-                                open.append(neighbor)
+                            if (neighbor in open and potentialNewGCost < neighbor.gCost) or neighbor not in open:
+
+                                neighbor.gCost = potentialNewGCost
+                                neighbor.hCost = getStraightDistance(cur, endNode)
+                                neighbor.clacFCost()
+                                neighbor.parent = cur
+
+                                if neighbor not in open:
+                                    open.append(neighbor)
         
-
-
-
-
-    # pass
-
-
+#checks if you can get to a neighboring node from a starting Node
 def canWalkTo(app, startingNode, targetNode):
 
     #if the target Node is not traversable
@@ -878,24 +869,51 @@ def canWalkTo(app, startingNode, targetNode):
 
     return True
 
-def walkableDistanceBetweenTwoNodes(app, startNode, curNode):
-    #finds the g-cost of a Node by tracing through its parents until it gets to starting node
+#finds the distanace between 2 nodes if there are no obsticals
+def getStraightDistance(nodeA, nodeB):
+
     sum = 0
 
-    dx = curNode.x - curNode.parent.x
-    dy = curNode.y - curNode.parent.y
+    deltaX = abs(nodeA.x - nodeB.x)
+    deltaY = abs(nodeA.y - nodeB.y)
 
-    while curNode != startNode:
+    #summing up diagonal lengths
+    while deltaX > 0 and deltaY > 0:
+        deltaX -= 1
+        deltaY -= 1
 
-        if dx != 0 and dy != 0:
-            sum += 14
-        elif dx != 0 or dy != 0:
-            sum += 10
+        sum += 14
 
-        curNode = curNode.parent
-    
+    #summing up axial lengths
+    sum += (deltaX * 10)
+    sum += (deltaY * 10)
 
+    return sum
 
+#creates a list of nodes that the char has to travel to
+def path(app, begin, cur):
+
+    app.path = []
+
+    while (cur != begin):
+        app.path.append(cur)
+        cur = cur.parent
+
+    return app.path
+
+#removes the next node to move to from the list and moves there
+def pathfindingMovement(app):
+
+    cur = app.path.pop()
+
+    xDistanceFromGridTopLeft = cur.x * app.nodeWidth + app.nodeWidth/2
+    yDistanceFromGridTopLeft = cur.y * app.nodeHeight + app.nodeHeight/2
+
+    x = app.width/2 - app.backroundWidth/2 - app.frameshiftX + xDistanceFromGridTopLeft
+    y = app.gameHeight/2 - app.backroundHeight/2 - app.frameshiftY + yDistanceFromGridTopLeft
+
+    setTarget(app, x, y)
+    setMoveTo(app)
 
 
 #=======================================
