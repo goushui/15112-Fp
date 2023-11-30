@@ -11,14 +11,13 @@ are my comments okay?
 
 to do
 -make randomly generted map
-    rocks
 -make sprites
 -make pathfinding
 -add images for the upgrades
 
 
 
-citations:
+Citations:
 - game idea from Vampire Survivors
 - framseshift got the idea of moving all the things on the screen from 2022 page
 - Gif animation code from F23_demos 11/21 Lecture
@@ -36,6 +35,8 @@ class boss:
         self.speed = 1
         self.x = 0
         self.y = 0
+        self.lastX = 0
+        self.lastY = 0
         self.size = 30
         self.color = "purple"
         self.respawnTimer = 1
@@ -53,6 +54,37 @@ class lasers:
         self.speed = 10
         self.setCD = 50
         self.currentCD = 0
+
+class Node:
+
+    def __init__(self, x, y):
+        #grid values
+        self.x = x
+        self.y = y
+
+        self.gCost = None
+        self.hCost = None
+        self.fCost = None
+
+        self.traversable = True
+
+        self.parent = None
+
+        self.baseColor = "lightgreen"
+        self.color = "lightgreen"
+
+    def clacFCost(self):
+        self.fCost = self.gCost + self.hCost
+
+    def __eq__(self, other):
+
+        return isinstance(other, Node) and self.x == other.x and self.y == other.y
+
+    def __hash__(self):
+        return hash((self.x, self.y))
+
+    def __repr__(self):
+        return f"{(self.x, self.y)}"
 
 #==============================================================================
 #==============================================================================
@@ -108,6 +140,9 @@ def reset(app):
         app.frameshiftX = 0
         app.frameshiftY = 0
 
+        app.lastFrameshiftX = 0
+        app.lastFrameshiftY = 0
+
     #Images====================================================================
     if True:
         #map
@@ -116,8 +151,8 @@ def reset(app):
             app.backround = Image.open('images/grass.gif')
 
             #makes the size of the backround
-            app.backroundWidth = 3000
-            app.backroundHeight = 3000
+            app.backroundWidth = 1000
+            app.backroundHeight = 1000
             app.backround = app.backround.resize((app.backroundWidth, app.backroundHeight))
 
             # Cast image type to CMUImage to allow for faster drawing
@@ -192,58 +227,16 @@ def reset(app):
                 app.bossSpriteList2.append(fr)
             app.bossSpriteCounter2 = 0
 
-    #rocks
-    if True:
-        app.rocks = []
-        generateRocks(app)
 
     #grid
     if True:
         generateGrid(app)
+        generateWalls(app)
 
 def resetBoss(app):
     app.boss1.x = 0
     app.boss1.y = 0
     app.boss1.health = app.boss1.totalHealth
-
-#creates rocks
-def generateRocks(app):
-    #randomly generates rocks of different sizes across the map
-    #rocks cannot spawn in the center where the character spawns in
-    
-    numRocks = random.randint(1, 100)
-
-    for i in range(numRocks):
-
-        #creates boundaries for where the rocks can spawn
-        mapLeftBound = app.width/2 - app.backroundWidth/2 + 300
-        mapRightBound = app.width/2 + app.backroundWidth/2 - 300
-
-        mapTopBound = app.gameHeight/2 - app.backroundHeight/2 + 300
-        mapBottomtBound = app.gameHeight/2 + app.backroundHeight/2 - 300
-
-        spawnLeftBound = app.width/2/2 - 300
-        spawnRightBound = app.width/2 + 300
-
-        spawnTopBound = app.gameHeight - 300
-        spawnBottomtBound = app.gameHeight/2 + 300
-
-        #randomly generates rock spawn points
-        rand1 = random.randint(1, 2)
-        if rand1 == 1:
-            x = random.randint(mapLeftBound, spawnLeftBound)
-        else:
-            x = random.randint(spawnRightBound, mapRightBound)
-
-        rand2 = random.randint(1, 2)
-        if rand2 == 1:
-            y = random.randint(mapTopBound, spawnTopBound)
-        else:
-            y = random.randint(spawnBottomtBound, mapBottomtBound)
-
-        size = random.randint(100, 200)
-
-        app.rocks.append([x , y , size])
 
 #==============================================================================
 #==============================================================================
@@ -254,8 +247,6 @@ def generateRocks(app):
 def redrawAll(app):
 
     drawMap(app)
-
-    drawRocks(app)
 
     drawGrid(app)
 
@@ -287,7 +278,7 @@ def redrawAll(app):
 #DRAWING MAP
 def drawMap(app):
     
-    drawRect(app.width/2-app.frameshiftX, app.gameHeight-app.frameshiftY, 1000, 1000, align = "center", fill = "lightblue")
+    drawRect(app.width/2-app.frameshiftX, app.gameHeight/2-app.frameshiftY, app.backroundWidth+1000, app.backroundHeight+1000, align = "center", fill = "lightblue")
     # drawPILImage takes in a PIL image object and the left-top coordinates
     drawImage(app.backround, app.width/2-app.frameshiftX, app.gameHeight/2-app.frameshiftY, align = "center")
 
@@ -372,12 +363,6 @@ def drawBossHealthbar(app):
         
     drawLabel(f'{app.boss1.health} / {app.boss1.totalHealth}', app.width/2, 40, size = 20)
 
-#drawRocks
-def drawRocks(app):
-
-    for i in range(len(app.rocks)):
-        drawCircle(app.rocks[i][0] - app.frameshiftX, app.rocks[i][1] - app.frameshiftY, app.rocks[i][2], fill = "grey")
-
 #LASERS   
 def drawLasers(app):
     for laser in app.lasers1.lasers:
@@ -431,7 +416,13 @@ def onMousePress(app, mouseX, mouseY, button):
     
     if app.situation == 0:
         if button == 2:
-            setMoveTo(app, mouseX, mouseY)
+            
+            findTargetNode(app)
+            if app.charNode == app.targetNode:
+                setMoveTo(app)
+            else:
+                pathfinding(app, app.charNode, app.targetNode)
+
 
     elif app.situation == 2:
         if button == 0:
@@ -439,7 +430,7 @@ def onMousePress(app, mouseX, mouseY, button):
             # selectUpgrade(app, mouseX, mouseY)
 
 # sets - app.charIsMoving, app.moveToCoords, app.moveToAngle
-def setMoveTo(app, mouseX, mouseY):
+def setMoveTo(app):
 
     app.charIsMoving = True
     app.moveToCoords = app.targetCoords
@@ -462,10 +453,13 @@ def setTarget(app, mouseX, mouseY):
     #sets app.targetCoords, app.targetDistance, app.character1.targetAngle
 
     #makes sure the point is in bounds
-    res = pointInBounds(app, mouseX, mouseY)
-    app.targetCoords = res[1]
-    deltaX = res[0][0]
-    deltaY = res[0][1]
+
+    deltaX = mouseX - app.charX
+    deltaY = mouseY - app.charY
+
+    deltaY = -deltaY
+
+    app.targetCoords = [mouseX, mouseY]
 
     hypotenuse = pythagoreanTheorem(deltaX, deltaY)
 
@@ -479,17 +473,6 @@ def setTarget(app, mouseX, mouseY):
     else:
         app.targetAngle = math.pi - math.asin(deltaY/hypotenuse)
 
-def pointInBounds(app, mouseX, mouseY):
-    #makes sure the character is in bounds of the map
-    #calculates the position of the chracter relative to the center of the backorund image
-    #if the character is too far away in either direction, reset the coordinates to that of the bound
-
-    deltaX = mouseX - app.charX
-    deltaY = mouseY - app.charY
-
-    deltaY = -deltaY
-
-    return [[deltaX, deltaY], [mouseX, mouseY]]
 #=======================================
 #onStep
 #=======================================     
@@ -503,11 +486,13 @@ def onStep(app):
         pass
     else:
         app.time += 1
+
         abilityCooldowns(app)
 
         if app.charIsMoving:
             characterMove(app)
-            checkCharacterCollision(app)
+        elif len(app.path) > 0:
+            pathfindingMovement(app)
 
         #SPAWNS BOSS AT TIME
         if app.boss1.health == 0:
@@ -517,13 +502,28 @@ def onStep(app):
 
         if app.boss1.health:
             bossMove(app)
-            checkBossCollision(app)
 
         if len(app.lasers1.lasers) > 0:
             moveLasers(app)
 
         #GIF
         animateChar(app)
+
+        #nodes
+        findBossNode(app)
+        findCharNode(app)
+
+        #updates last coordinates if collision
+        app.lastFrameshiftX = app.frameshiftX
+        app.lastFrameshiftY = app.frameshiftY
+
+        app.boss1.lastX = app.boss1.x
+        app.boss1.lastY = app.boss1.y
+
+
+        if app.time % 60 == 0:
+            print("app.moveToCoords", app.moveToCoords)
+            print("app.moveToAngle", app.moveToAngle)
 
 #decreases ability cooldowns
 def abilityCooldowns(app):
@@ -644,55 +644,6 @@ def moveLasers(app):
             app.lasers1.lasers[i][3] += 1
             i+=1
 
-#checks if something has collided with a rock and pushes the object back accordingly
-def checkCharacterCollision(app):
-    for rock in app.rocks:
-
-        rockX = rock[0] - app.frameshiftX
-        rockY = rock[1] - app.frameshiftY
-        spaceBetweenTwo = rock[2] + app.charSize
-
-        deltaX = (app.charX-rockX)
-        deltaY = (app.charY-rockY)
-
-        deltaY = -deltaY
-
-        hypotenuse = pythagoreanTheorem(deltaX, deltaY)
-
-        pushDistance = spaceBetweenTwo - hypotenuse 
-
-        #make sure no crash
-        if hypotenuse == 0:
-            pass
-        elif hypotenuse < spaceBetweenTwo:
-
-            stopMoving(app)
-            app.frameshiftX += deltaX/hypotenuse * pushDistance
-            app.frameshiftY -= deltaY/hypotenuse * pushDistance
-
-def checkBossCollision(app):
-    for rock in app.rocks:
-
-        rockX = rock[0]
-        rockY = rock[1]
-        spaceBetweenTwo = rock[2] + app.boss1.size
-
-        deltaX = (app.boss1.x-rockX)
-        deltaY = (app.boss1.y-rockY)
-
-        deltaY = -deltaY
-
-        hypotenuse = pythagoreanTheorem(deltaX, deltaY)
-
-        pushDistance = spaceBetweenTwo - hypotenuse 
-
-        #make sure no crash
-        if hypotenuse == 0:
-            pass
-        elif hypotenuse < spaceBetweenTwo:
-
-            app.boss1.x += deltaX/hypotenuse * pushDistance
-            app.boss1.y -= deltaY/hypotenuse * pushDistance
 
 
 #=======================================
@@ -701,12 +652,9 @@ def checkBossCollision(app):
 
 def pythagoreanTheorem(x, y):
     return (x**2 + y**2)**0.5
-    
-def roundToThousands(app, num):
-    return rounded(num*1000)/1000
-    
+
 def distance(app, x1, y1, x2, y2):
-    return ((x2-x1)**2 + (y2-y1)**2)**0.5
+    return pythagoreanTheorem(x2-x1, y2-y1)
 
 #checks if a set of coordinates are inside a rectangle
 def inRect(app, centerX, centerY, height, width, pointerX, pointerY):
@@ -720,45 +668,253 @@ def inRect(app, centerX, centerY, height, width, pointerX, pointerY):
     return False
 
 #=======================================
+#walls
+#=======================================
+
+def generateWalls(app):
+
+    app.walls = set()
+
+    c = 6
+    for r in range(3, 7):
+        app.matrix[r][c].traversable = False
+        app.matrix[r][c].color = "black"
+        app.matrix[r][c].baseColor = "black"
+        app.walls.add(app.matrix[r][5])
+
+#=======================================
 #pathfinding
 #=======================================
 
+#creates a gird of node objects
 def generateGrid(app):
 
-    app.blockWidth = 100
-    app.blockHeight = 100
+    #variables
+    if True:
+        app.nodeWidth = 100
+        app.nodeHeight = 100
+        app.numBlocksWide = app.backroundWidth//app.nodeWidth
+        app.numBlocksHigh = app.backroundHeight//app.nodeHeight
+        app.matrix = []
+        app.charNode = None
+        app.targetNode = None
+        app.bossNode = None
 
-    numBlocksWide = app.backroundWidth//app.blockWidth
-    numBlocksHigh = app.backroundHeight//app.blockHeight
+        app.path = []
 
-    app.matrix = []
-
-    for j in range(numBlocksHigh):
+    for j in range(app.numBlocksHigh):
         app.matrix.append([])
-        for k in range(numBlocksWide):
-            app.matrix[j].append([None])
+        for k in range(app.numBlocksWide):
+            app.matrix[j].append(Node(k, j))
 
+#draws the grid of node objects
 def drawGrid(app):
 
-    numBlocksHigh = len(app.matrix)
-    numBlocksWide = len(app.matrix[0])
+    setX = app.width/2 - app.backroundWidth/2
+    y = app.gameHeight/2 - app.backroundHeight/2
 
-    x = app.width/2 - app.backroundWidth
-    y = app.gameHeight/2 - app.backroundHeight
+    for j in range(app.numBlocksHigh):
+        x = setX
+        for k in range(app.numBlocksWide):
+    
+            #sets the color of the node
+            color = app.matrix[j][k].color
 
-    for j in range(numBlocksHigh):
-        y += app.blockHeight
-        for k in range(numBlocksWide):
-            x += app.blockWidth
-            drawRect(x - app.frameshiftX, y - app.frameshiftY, 9, 9, border = "black", fill = "pink", opacity = 50)
+            for node in app.path:
+                if (k, j) == (node.x, node.y):
+                    color = "white"
 
+            drawRect(x - app.frameshiftX, y - app.frameshiftY, app.nodeWidth, app.nodeHeight, border = "black", fill = color, opacity = 30)
+            x += app.nodeWidth
 
-def pathfinding(app):
+        y += app.nodeHeight
 
-    open = set()
-#     closed = set()
+#returns a tuple of the coordinates that the chracter is in
+def findCharNode(app):
 
-    # pass
+    x = app.frameshiftX + app.backroundWidth/2
+    y = app.frameshiftY + app.backroundHeight/2
+
+    col = int(x // app.nodeWidth)
+    row = int(y // app.nodeHeight)
+
+    #checks to see if the node is in bounds of the grid
+    if 0 <= col < app.numBlocksWide and 0 <= row < app.numBlocksHigh:
+
+        if app.matrix[row][col].traversable == False:
+            app.frameshiftX = app.lastFrameshiftX
+            app.frameshiftY = app.lastFrameshiftY
+        else:
+            if app.charNode:
+                app.charNode.color = app.charNode.baseColor
+            app.charNode = app.matrix[row][col]
+            app.charNode.color = "blue"
+
+#returns a tuple of the coordinates that the boss is in
+def findBossNode(app):
+
+    x = app.boss1.x + app.backroundWidth/2 - app.width/2
+    y = app.boss1.y + app.backroundHeight/2 - app.gameHeight/2
+
+    col = int(x // app.nodeWidth)
+    row = int(y // app.nodeHeight)
+
+    #checks to see if the node is in bounds of the grid
+    if 0 <= col < app.numBlocksWide and 0 <= row < app.numBlocksHigh:
+
+        if app.matrix[row][col].traversable == False:
+            app.boss1.x = app.boss1.lastX
+            app.boss1.y = app.boss1.lastY
+        else:
+            if app.bossNode:
+                app.bossNode.color = app.bossNode.baseColor
+            app.bossNode = app.matrix[row][col]
+            app.bossNode.color = "purple"
+
+#returns a tuple of the coordinates that the boss is in
+def findTargetNode(app):
+
+    targetX = app.targetCoords[0]
+    targetY = app.targetCoords[1]
+
+    deltaX = targetX - app.charX
+    deltaY = targetY - app.charY
+
+    xDistanceFromCenterToTopLeft = app.frameshiftX + app.backroundWidth/2
+    yDistanceFromCenterToTopLeft = app.frameshiftY + app.backroundHeight/2
+
+    x = deltaX + xDistanceFromCenterToTopLeft
+    y = deltaY + yDistanceFromCenterToTopLeft
+
+    col = int(x // app.nodeWidth )
+    row = int(y // app.nodeHeight )
+
+    #checks to see if the node is in bounds of the grid
+    if 0 <= col < app.numBlocksWide and 0 <= row < app.numBlocksHigh:
+        if app.targetNode:
+            app.targetNode.color = app.targetNode.baseColor
+        app.targetNode = app.matrix[row][col]
+        app.targetNode.color = "red"
+        return (x, y)
+    
+#A* pathfinding algorithm
+def pathfinding(app, startNode, endNode):
+
+    open = []
+    closed = []
+    open.append(startNode)
+    startNode.gCost = 0
+
+    while len(open) > 0:
+
+        #sets cur to the node in open that has the lowest f-cost
+        cur = open[0]
+        for i in range(1, len(open)):
+            if open[i].fCost < cur.fCost:
+                cur = open[i]
+            elif open[i].fCost == cur.fCost:
+                if open[i].hCost < cur.hCost:
+                    cur = open[i]
+
+        open.remove(cur)
+        closed.append(cur)
+
+        if cur == endNode:
+            return path(app, startNode, endNode)
+
+        #loops through the neighbors of the cur node
+        for dx in range(-1, 2):
+            for dy in range(-1, 2):
+                if (dx, dy) != (0, 0):
+                    neighborY = cur.y + dy
+                    neighborX = cur.x + dx
+                    if 0 <= neighborY < len(app.matrix) and 0 <= neighborX < len(app.matrix[0]):
+                        neighbor = app.matrix[neighborY][neighborX]
+
+                        #pass if the neighbor is not a legal move
+                        if canWalkTo(app, cur, neighbor) == False or neighbor in closed:
+                            continue
+                        else:
+                            potentialNewGCost = cur.gCost + getStraightDistance(cur, neighbor)
+
+                            if (neighbor in open and potentialNewGCost < neighbor.gCost) or neighbor not in open:
+
+                                neighbor.gCost = potentialNewGCost
+                                neighbor.hCost = getStraightDistance(cur, endNode)
+                                neighbor.clacFCost()
+                                neighbor.parent = cur
+
+                                if neighbor not in open:
+                                    open.append(neighbor)
+        
+#checks if you can get to a neighboring node from a starting Node
+def canWalkTo(app, startingNode, targetNode):
+
+    #if the target Node is not traversable
+    if targetNode.traversable == False:
+        return False
+    
+    #if the target node is diagonal but there is a corner Node in the way
+    #can't move diagonally across corners
+    dx = targetNode.x - startingNode.x
+    dy = targetNode.y - startingNode.y
+
+    if dx != 0 and dy != 0:
+
+        sideNode1 = app.matrix[startingNode.y][targetNode.x]
+        sideNode2 = app.matrix[targetNode.y][startingNode.x]
+
+        if sideNode1.traversable == False or sideNode2.traversable == False:
+            return False
+
+    return True
+
+#finds the distanace between 2 nodes if there are no obsticals
+def getStraightDistance(nodeA, nodeB):
+
+    sum = 0
+
+    deltaX = abs(nodeA.x - nodeB.x)
+    deltaY = abs(nodeA.y - nodeB.y)
+
+    #summing up diagonal lengths
+    while deltaX > 0 and deltaY > 0:
+        deltaX -= 1
+        deltaY -= 1
+
+        sum += 14
+
+    #summing up axial lengths
+    sum += (deltaX * 10)
+    sum += (deltaY * 10)
+
+    return sum
+
+#creates a list of nodes that the char has to travel to
+def path(app, begin, cur):
+
+    app.path = []
+
+    while (cur != begin):
+        app.path.append(cur)
+        cur = cur.parent
+
+    return app.path
+
+#removes the next node to move to from the list and moves there
+def pathfindingMovement(app):
+
+    cur = app.path.pop()
+
+    xDistanceFromGridTopLeft = cur.x * app.nodeWidth + app.nodeWidth/2
+    yDistanceFromGridTopLeft = cur.y * app.nodeHeight + app.nodeHeight/2
+
+    x = app.width/2 - app.backroundWidth/2 - app.frameshiftX + xDistanceFromGridTopLeft
+    y = app.gameHeight/2 - app.backroundHeight/2 - app.frameshiftY + yDistanceFromGridTopLeft
+
+    setTarget(app, x, y)
+    setMoveTo(app)
+
 
 #=======================================
 #MAIN
@@ -767,12 +923,6 @@ def main():
     runApp()
 
 main()
-
-
-
-
-
-
 
 
 

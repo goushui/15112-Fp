@@ -43,6 +43,9 @@ class boss:
         self.slowness = 0
         self.targetAngle = 0
 
+        self.targetX = 0
+        self.targetY = 0
+
 class lasers:
 
     def __init__(self):
@@ -62,9 +65,9 @@ class Node:
         self.x = x
         self.y = y
 
-        self.gCost = None
-        self.hCost = None
-        self.fCost = None
+        self.gCost = 0
+        self.hCost = 0
+        self.fCost = 0
 
         self.traversable = True
 
@@ -234,8 +237,8 @@ def reset(app):
         generateWalls(app)
 
 def resetBoss(app):
-    app.boss1.x = 0
-    app.boss1.y = 0
+    app.boss1.x = app.width/2 - app.backroundWidth/2 - app.frameshiftX + app.nodeWidth/2
+    app.boss1.y = app.gameHeight/2 - app.backroundHeight/2 - app.frameshiftY + app.nodeHeight/2
     app.boss1.health = app.boss1.totalHealth
 
 #==============================================================================
@@ -421,7 +424,7 @@ def onMousePress(app, mouseX, mouseY, button):
             if app.charNode == app.targetNode:
                 setMoveTo(app)
             else:
-                pathfinding(app, app.charNode, app.targetNode)
+                app.charPath = pathfinding(app, app.charNode, app.targetNode)
 
 
     elif app.situation == 2:
@@ -491,7 +494,7 @@ def onStep(app):
 
         if app.charIsMoving:
             characterMove(app)
-        elif len(app.path) > 0:
+        elif len(app.charPath) > 0:
             pathfindingMovement(app)
 
         #SPAWNS BOSS AT TIME
@@ -501,7 +504,12 @@ def onStep(app):
                 resetBoss(app)
 
         if app.boss1.health:
-            bossMove(app)
+            if app.time % 100 == 0:
+                app.bossPath = pathfinding(app, app.bossNode, app.charNode)
+            if len(app.bossPath) > 0:
+                if app.time % 50 == 0:
+                    setBossPathfindingMovement(app)
+                bossPathfindingMovement(app)
 
         if len(app.lasers1.lasers) > 0:
             moveLasers(app)
@@ -700,7 +708,8 @@ def generateGrid(app):
         app.targetNode = None
         app.bossNode = None
 
-        app.path = []
+        app.charPath = []
+        app.bossPath = []
 
     for j in range(app.numBlocksHigh):
         app.matrix.append([])
@@ -720,7 +729,7 @@ def drawGrid(app):
             #sets the color of the node
             color = app.matrix[j][k].color
 
-            for node in app.path:
+            for node in app.charPath:
                 if (k, j) == (node.x, node.y):
                     color = "white"
 
@@ -893,18 +902,18 @@ def getStraightDistance(nodeA, nodeB):
 #creates a list of nodes that the char has to travel to
 def path(app, begin, cur):
 
-    app.path = []
+    pathList = []
 
     while (cur != begin):
-        app.path.append(cur)
+        pathList.append(cur)
         cur = cur.parent
 
-    return app.path
+    return pathList
 
 #removes the next node to move to from the list and moves there
 def pathfindingMovement(app):
 
-    cur = app.path.pop()
+    cur = app.charPath.pop()
 
     xDistanceFromGridTopLeft = cur.x * app.nodeWidth + app.nodeWidth/2
     yDistanceFromGridTopLeft = cur.y * app.nodeHeight + app.nodeHeight/2
@@ -914,6 +923,50 @@ def pathfindingMovement(app):
 
     setTarget(app, x, y)
     setMoveTo(app)
+
+#removes the next node to move to from the list and moves there
+def setBossPathfindingMovement(app):
+
+    print("app.bossPath.pop()", app.bossPath)
+    cur = app.bossPath.pop()
+
+    xDistanceFromGridTopLeft = cur.x * app.nodeWidth + app.nodeWidth/2
+    yDistanceFromGridTopLeft = cur.y * app.nodeHeight + app.nodeHeight/2
+
+    app.boss1.targetX = app.width/2 - app.backroundWidth/2 - app.frameshiftX + xDistanceFromGridTopLeft
+    app.boss1.targetY = app.gameHeight/2 - app.backroundHeight/2 - app.frameshiftY + yDistanceFromGridTopLeft
+
+    print("hi", app.boss1.targetX, app.boss1.targetY)
+
+def bossPathfindingMovement(app):
+
+    x = app.boss1.x - app.frameshiftX
+    y = app.boss1.y - app.frameshiftY
+
+    deltaX = (app.boss1.targetX-x)
+    deltaY = (app.boss1.targetY-y)
+
+    deltaY = -deltaY 
+
+    hypotenuse = pythagoreanTheorem(deltaX, deltaY)
+    
+    #make sure no crash
+    if hypotenuse == 0:
+        pass
+    else:
+        if deltaX >= 0:
+            app.boss1.targetAngle = math.asin(deltaY/hypotenuse)
+        else:
+            app.boss1.targetAngle = math.pi - math.asin(deltaY/hypotenuse)
+        
+        graphicsHorizontalMovement = deltaX/hypotenuse * app.boss1.speed
+        graphicsVerticalMovement = -(deltaY/hypotenuse * app.boss1.speed)
+
+        #move Boss
+        app.boss1.x += graphicsHorizontalMovement
+        app.boss1.y += graphicsVerticalMovement
+        
+        bossAttack(app)
 
 
 #=======================================
