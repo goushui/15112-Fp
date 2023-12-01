@@ -32,7 +32,7 @@ class boss:
         self.meleeDmg = 34
         self.totalHealth = 100
         self.health = 0
-        self.speed = 1
+        self.speed = 2
         self.x = 0
         self.y = 0
         self.lastX = 0
@@ -42,6 +42,25 @@ class boss:
         self.respawnTimer = 1
         self.slowness = 0
         self.targetAngle = 0
+        self.isMoving = False
+
+        self.targetX = 0
+        self.targetY = 0
+
+        self.targetGridX = 0
+        self.targetGridY = 0
+
+    def reset(self):
+
+        self.health = self.totalHealth
+
+        self.isMoving = False
+
+        self.targetX = 0
+        self.targetY = 0
+
+        self.targetGridX = 0
+        self.targetGridY = 0
 
 class lasers:
 
@@ -62,9 +81,9 @@ class Node:
         self.x = x
         self.y = y
 
-        self.gCost = None
-        self.hCost = None
-        self.fCost = None
+        self.gCost = 0
+        self.hCost = 0
+        self.fCost = 0
 
         self.traversable = True
 
@@ -85,6 +104,89 @@ class Node:
 
     def __repr__(self):
         return f"{(self.x, self.y)}"
+
+class upgradeBoxes:
+        
+    def __init__(self):
+        self.rectWidth = None
+        self.rectHeight = None
+        self.gapWidth = None
+        self.startX = None
+        self.highlighted = None
+
+class charUpgrades:
+
+    def __init__(self):
+
+        self.list = [False, False, False, False, False]
+        self.Objects = []
+
+        self.fourUpgrades = []
+
+class freezingLazers(charUpgrades):
+        
+    def __init__(self):
+        self.bossSpeedMultiplier = 1
+        self.bossFreezeCD = 0
+
+        self.setBossSpeedMultiplier = 0
+        self.setBossFreezeCD = 60
+
+        self.line1 = "lazers freeze"
+        self.line2 = "the enemy"
+        self.id = 0
+
+    def activate(self, app):
+        app.lasers1.color = "cyan"
+
+class lazerDmg(charUpgrades):
+        
+    def __init__(self):
+        self.line1 = "lazers do"
+        self.line2 = "more damage"
+
+        self.id = 1
+
+    def activate(self, app):
+        app.lasers1.dmg *= 1.2
+        app.lasers1.width *= 1.2
+
+class lazerAttackSpeed(charUpgrades):
+        
+    def __init__(self):
+
+        self.line1 = "lazer cooldown"
+        self.line2 = "is shorter"
+
+        self.id = 2
+
+    def activate(self, app):
+        app.lasers1.setCD *= 0.1
+
+class fasterMS(charUpgrades):
+        
+    def __init__(self):
+        self.speedMuliplier = 2
+
+        self.line1 = "character moves"
+        self.line2 = "faster"
+
+        self.id = 3
+
+    def activate(self, app):
+        app.charSpeed *= 4
+
+class increaseHP(charUpgrades):
+
+    def __init__(self):
+        self.line1 = "character gains"
+        self.line2 = "double HP"
+
+        self.id = 4
+
+    def activate(self, app):
+        app.charTotalHealth *= 2
+        app.charHealth *= 2
 
 #==============================================================================
 #==============================================================================
@@ -134,6 +236,7 @@ def reset(app):
         app.boss1 = boss()
         app.lasers1 = lasers()
 
+    generateImagesAndGifs(app)
 
     #frameshift Variables
     if True:
@@ -143,100 +246,138 @@ def reset(app):
         app.lastFrameshiftX = 0
         app.lastFrameshiftY = 0
 
-    #Images====================================================================
-    if True:
-        #map
-        if True:
-            # Open image from local directory
-            app.backround = Image.open('images/grass.gif')
-
-            #makes the size of the backround
-            app.backroundWidth = 1000
-            app.backroundHeight = 1000
-            app.backround = app.backround.resize((app.backroundWidth, app.backroundHeight))
-
-            # Cast image type to CMUImage to allow for faster drawing
-            app.backround = CMUImage(app.backround)
-
-        #char facing right
-        if True:
-
-            myGif = Image.open('images/kirb.gif')
-            app.charSpriteList1 = []
-            for frame in range(myGif.n_frames):
-                #Set the current frame
-                myGif.seek(frame)
-                #Resize the image
-                fr = myGif.resize((myGif.size[0]//2, myGif.size[1]//2))
-                #Flip the image
-                fr = fr.transpose(Image.FLIP_LEFT_RIGHT)
-                #Convert to CMUImage
-                fr = CMUImage(fr)
-                #Put in our sprite list
-                app.charSpriteList1.append(fr)
-            app.charSpriteCounter1 = 0
-
-        #char facing left
-        if True:
-            myGif = Image.open('images/kirb2.gif')
-            app.charSpriteList2 = []
-            for frame in range(myGif.n_frames):
-                #Set the current frame
-                myGif.seek(frame)
-                #Resize the image
-                fr = myGif.resize((myGif.size[0]//2, myGif.size[1]//2))
-                #Flip the image
-                fr = fr.transpose(Image.FLIP_LEFT_RIGHT)
-                #Convert to CMUImage
-                fr = CMUImage(fr)
-                #Put in our sprite list
-                app.charSpriteList2.append(fr)
-            app.charSpriteCounter2 = 0
-
-        #boss facing right
-
-            myGif = Image.open('images/kirb.gif')
-            app.bossSpriteList1 = []
-            for frame in range(myGif.n_frames):
-                #Set the current frame
-                myGif.seek(frame)
-                #Resize the image
-                fr = myGif.resize((myGif.size[0]//2, myGif.size[1]//2))
-                #Flip the image
-                fr = fr.transpose(Image.FLIP_LEFT_RIGHT)
-                #Convert to CMUImage
-                fr = CMUImage(fr)
-                #Put in our sprite list
-                app.bossSpriteList1.append(fr)
-            app.bossSpriteCounter1 = 0
-
-        #boss facing left
-        if True:
-            myGif = Image.open('images/kirb2.gif')
-            app.bossSpriteList2 = []
-            for frame in range(myGif.n_frames):
-                #Set the current frame
-                myGif.seek(frame)
-                #Resize the image
-                fr = myGif.resize((myGif.size[0]//2, myGif.size[1]//2))
-                #Flip the image
-                fr = fr.transpose(Image.FLIP_LEFT_RIGHT)
-                #Convert to CMUImage
-                fr = CMUImage(fr)
-                #Put in our sprite list
-                app.bossSpriteList2.append(fr)
-            app.bossSpriteCounter2 = 0
-
-
     #grid
     if True:
         generateGrid(app)
         generateWalls(app)
 
+        #CHAR Upgrades
+    
+    #creates character upgrade objects
+    if True:
+        app.charUpgrades1 = charUpgrades()
+        app.upgradeBoxes1 = upgradeBoxes()
+        app.freezingLazers1 = freezingLazers()
+        app.lazerDmg1 = lazerDmg()
+        app.lazerAttackSpeed1 = lazerAttackSpeed()
+        app.fasterMS1 = fasterMS()
+        app.increaseHP1 = increaseHP()
+
+        app.charUpgrades1.Objects = [app.freezingLazers1, app.lazerDmg1, app.lazerAttackSpeed1, app.fasterMS1, app.increaseHP1]
+    
+#resets the boss
 def resetBoss(app):
-    app.boss1.x = 0
-    app.boss1.y = 0
+
+    app.boss1.reset()
+
+    randBossSpawn(app)
+
     app.boss1.health = app.boss1.totalHealth
+
+    #Node
+    app.bossNode = None
+    app.bossPath = []
+
+def generateImagesAndGifs(app):
+
+    #map
+    if True:
+        # Open image from local directory
+        app.backround = Image.open('images/grass.gif')
+
+        #makes the size of the backround
+        app.backroundWidth = 1000
+        app.backroundHeight = 1000
+        app.backround = app.backround.resize((app.backroundWidth, app.backroundHeight))
+
+        # Cast image type to CMUImage to allow for faster drawing
+        app.backround = CMUImage(app.backround)
+
+    #char facing right
+    if True:
+
+        myGif = Image.open('images/kirb.gif')
+        app.charSpriteList1 = []
+        for frame in range(myGif.n_frames):
+            #Set the current frame
+            myGif.seek(frame)
+            #Resize the image
+            fr = myGif.resize((myGif.size[0]//2, myGif.size[1]//2))
+            #Flip the image
+            fr = fr.transpose(Image.FLIP_LEFT_RIGHT)
+            #Convert to CMUImage
+            fr = CMUImage(fr)
+            #Put in our sprite list
+            app.charSpriteList1.append(fr)
+        app.charSpriteCounter1 = 0
+
+    #char facing left
+    if True:
+        myGif = Image.open('images/kirb2.gif')
+        app.charSpriteList2 = []
+        for frame in range(myGif.n_frames):
+            #Set the current frame
+            myGif.seek(frame)
+            #Resize the image
+            fr = myGif.resize((myGif.size[0]//2, myGif.size[1]//2))
+            #Flip the image
+            fr = fr.transpose(Image.FLIP_LEFT_RIGHT)
+            #Convert to CMUImage
+            fr = CMUImage(fr)
+            #Put in our sprite list
+            app.charSpriteList2.append(fr)
+        app.charSpriteCounter2 = 0
+
+    #boss facing right
+
+        myGif = Image.open('images/kirb.gif')
+        app.bossSpriteList1 = []
+        for frame in range(myGif.n_frames):
+            #Set the current frame
+            myGif.seek(frame)
+            #Resize the image
+            fr = myGif.resize((myGif.size[0]//2, myGif.size[1]//2))
+            #Flip the image
+            fr = fr.transpose(Image.FLIP_LEFT_RIGHT)
+            #Convert to CMUImage
+            fr = CMUImage(fr)
+            #Put in our sprite list
+            app.bossSpriteList1.append(fr)
+        app.bossSpriteCounter1 = 0
+
+    #boss facing left
+    if True:
+        myGif = Image.open('images/kirb2.gif')
+        app.bossSpriteList2 = []
+        for frame in range(myGif.n_frames):
+            #Set the current frame
+            myGif.seek(frame)
+            #Resize the image
+            fr = myGif.resize((myGif.size[0]//2, myGif.size[1]//2))
+            #Flip the image
+            fr = fr.transpose(Image.FLIP_LEFT_RIGHT)
+            #Convert to CMUImage
+            fr = CMUImage(fr)
+            #Put in our sprite list
+            app.bossSpriteList2.append(fr)
+        app.bossSpriteCounter2 = 0
+
+#sets the starting coordinates of the boss to a random corner grid
+def randBossSpawn(app):
+
+    i = random.randint(1, 4)
+    if i == 1:
+        app.boss1.x = app.width/2 - app.backroundWidth/2 + app.nodeWidth*3/2
+        app.boss1.y = app.gameHeight/2 - app.backroundHeight/2 + app.nodeHeight*3/2
+    elif i==2:
+        app.boss1.x = app.width/2 - app.backroundWidth/2 + app.nodeWidth*3/2
+        app.boss1.y = app.gameHeight/2 + app.backroundHeight/2 - app.nodeHeight*3/2
+    elif i==3:
+        app.boss1.x = app.width/2 + app.backroundWidth/2 - app.nodeWidth*3/2
+        app.boss1.y = app.gameHeight/2 - app.backroundHeight/2 + app.nodeHeight*3/2
+    elif i==4:
+        app.boss1.x = app.width/2 + app.backroundWidth/2 - app.nodeWidth*3/2
+        app.boss1.y = app.gameHeight/2 + app.backroundHeight/2 - app.nodeHeight*3/2
 
 #==============================================================================
 #==============================================================================
@@ -256,6 +397,7 @@ def redrawAll(app):
     if app.boss1.health:
         drawBoss(app)
         drawBossHealthbar(app)
+        drawPointerTarget(app)
 
     if app.lasers1.lasers:
         drawLasers(app)
@@ -263,6 +405,10 @@ def redrawAll(app):
     #game over screen
     if app.situation == 1:
         drawEnding1(app)
+
+    #characterUpgrades
+    elif app.situation == 2:
+        drawUpgradeSelector(app)
 
     #pause screen
     elif app.situation == 3:
@@ -363,6 +509,9 @@ def drawBossHealthbar(app):
         
     drawLabel(f'{app.boss1.health} / {app.boss1.totalHealth}', app.width/2, 40, size = 20)
 
+def drawPointerTarget(app):
+    drawCircle(app.boss1.targetX, app.boss1.targetY, 5, fill = "red")
+
 #LASERS   
 def drawLasers(app):
     for laser in app.lasers1.lasers:
@@ -404,6 +553,7 @@ def onKeyPress(app, key):
         if key == 'l':
             reset(app)
 
+#stops the chracter form moving
 def stopMoving(app):
     app.moveToCoords = [app.width/2, app.gameHeight/2]
     app.charIsMoving = False
@@ -416,18 +566,18 @@ def onMousePress(app, mouseX, mouseY, button):
     
     if app.situation == 0:
         if button == 2:
-            
-            findTargetNode(app)
-            if app.charNode == app.targetNode:
-                setMoveTo(app)
-            else:
-                pathfinding(app, app.charNode, app.targetNode)
+            col, row = findTargetNode(app, app.targetCoords[0], app.targetCoords[1])
+            setTargetNode(app, col, row)
+            if checkCanRightClick(app, row, col) == False:
+                if app.charNode == app.targetNode:
+                    setMoveTo(app)
+                else:
+                    app.charPath = pathfinding(app, app.charNode, app.targetNode)
 
-
+    #characterUpgrades
     elif app.situation == 2:
         if button == 0:
-            pass
-            # selectUpgrade(app, mouseX, mouseY)
+            selectUpgrade(app, mouseX, mouseY)
 
 # sets - app.charIsMoving, app.moveToCoords, app.moveToAngle
 def setMoveTo(app):
@@ -444,8 +594,9 @@ def onMouseMove(app, mouseX, mouseY):
 
     if app.situation == 0:
         setTarget(app, mouseX, mouseY)
+    #characterUpgrades
     elif app.situation == 2:
-        pass
+        checkIfHoverOverUpgrade(app, mouseX, mouseY)
     
 def setTarget(app, mouseX, mouseY):
     #finds the angle that the mouse is facing
@@ -491,7 +642,7 @@ def onStep(app):
 
         if app.charIsMoving:
             characterMove(app)
-        elif len(app.path) > 0:
+        elif app.charPath and len(app.charPath) > 0:
             pathfindingMovement(app)
 
         #SPAWNS BOSS AT TIME
@@ -500,18 +651,28 @@ def onStep(app):
             if app.boss1.respawnTimer == 0:
                 resetBoss(app)
 
+        #nodes
+        findCharNode(app)
+
         if app.boss1.health:
-            bossMove(app)
+            findBossNode(app)
+            if app.boss1.isMoving == False:
+                app.boss1.isMoving = True
+                app.bossPath = pathfinding(app, app.bossNode, app.charNode)
+                if len(app.bossPath) > 0:
+                    setBossPathfindingMovement(app)
+            else:
+                bossPathfindingMovement(app)
+
+            findBossNode(app)
 
         if len(app.lasers1.lasers) > 0:
             moveLasers(app)
 
+        findCharNode(app)
+
         #GIF
         animateChar(app)
-
-        #nodes
-        findBossNode(app)
-        findCharNode(app)
 
         #updates last coordinates if collision
         app.lastFrameshiftX = app.frameshiftX
@@ -521,15 +682,15 @@ def onStep(app):
         app.boss1.lastY = app.boss1.y
 
 
-        if app.time % 60 == 0:
-            print("app.moveToCoords", app.moveToCoords)
-            print("app.moveToAngle", app.moveToAngle)
-
 #decreases ability cooldowns
 def abilityCooldowns(app):
 
     if app.lasers1.currentCD > 0:
         app.lasers1.currentCD -= 1
+    
+    #charaterUpgrades
+    if app.freezingLazers1.bossFreezeCD > 0:
+        app.freezingLazers1.bossFreezeCD -= 1
 
 #finds the distance between where the chracter is moving to and the character and checks that it is higher then the chracter speed
 def characterMove(app):
@@ -609,15 +770,22 @@ def bossAttack(app):
 
 def checkCharacterDead(app):
     if app.charHealth <= 0:
+        app.charNode.color = app.charNode.baseColor
         app.charHealth = 0
         app.situation = 1
 
 def checkBossDead(app):
     if app.boss1.health <= 0:
+        app.bossNode.color = app.bossNode.baseColor
         app.boss1.health = 0
         app.boss1.respawnTimer = 200   
-        app.kills += 1    
+        app.kills += 1  
 
+        #makes sure there are enough upgrades left
+        #characterUpgrades
+        if getNumUpgradesLeft(app):
+            app.situation = 2
+            get4Upgrades(app)
 #loops through all the lazers and moves them
 #checks if any lazers collide with the boss and deals damage to the boss if so
 def moveLasers(app):
@@ -675,12 +843,43 @@ def generateWalls(app):
 
     app.walls = set()
 
-    c = 6
-    for r in range(3, 7):
+    rows = len(app.matrix)
+    cols = len(app.matrix[0])
+
+    c = 0
+    for r in range(rows):
         app.matrix[r][c].traversable = False
         app.matrix[r][c].color = "black"
         app.matrix[r][c].baseColor = "black"
-        app.walls.add(app.matrix[r][5])
+        app.walls.add(app.matrix[r][c])
+
+    c = cols-1
+    for r in range(rows):
+        app.matrix[r][c].traversable = False
+        app.matrix[r][c].color = "black"
+        app.matrix[r][c].baseColor = "black"
+        app.walls.add(app.matrix[r][c])
+
+    r = 0
+    for c in range(cols):
+        app.matrix[r][c].traversable = False
+        app.matrix[r][c].color = "black"
+        app.matrix[r][c].baseColor = "black"
+        app.walls.add(app.matrix[r][c])
+
+    r = rows - 1
+    for c in range(cols):
+        app.matrix[r][c].traversable = False
+        app.matrix[r][c].color = "black"
+        app.matrix[r][c].baseColor = "black"
+        app.walls.add(app.matrix[r][c])
+
+    r = 6
+    for c in range(2, 7):
+        app.matrix[r][c].traversable = False
+        app.matrix[r][c].color = "black"
+        app.matrix[r][c].baseColor = "black"
+        app.walls.add(app.matrix[r][c])
 
 #=======================================
 #pathfinding
@@ -698,9 +897,8 @@ def generateGrid(app):
         app.matrix = []
         app.charNode = None
         app.targetNode = None
-        app.bossNode = None
 
-        app.path = []
+        app.charPath = []
 
     for j in range(app.numBlocksHigh):
         app.matrix.append([])
@@ -720,9 +918,10 @@ def drawGrid(app):
             #sets the color of the node
             color = app.matrix[j][k].color
 
-            for node in app.path:
-                if (k, j) == (node.x, node.y):
-                    color = "white"
+            if app.charPath:
+                for node in app.charPath:
+                    if (k, j) == (node.x, node.y):
+                        color = "white"
 
             drawRect(x - app.frameshiftX, y - app.frameshiftY, app.nodeWidth, app.nodeHeight, border = "black", fill = color, opacity = 30)
             x += app.nodeWidth
@@ -750,7 +949,7 @@ def findCharNode(app):
             app.charNode = app.matrix[row][col]
             app.charNode.color = "blue"
 
-#returns a tuple of the coordinates that the boss is in
+#sets the coordinates that the boss is in
 def findBossNode(app):
 
     x = app.boss1.x + app.backroundWidth/2 - app.width/2
@@ -771,11 +970,16 @@ def findBossNode(app):
             app.bossNode = app.matrix[row][col]
             app.bossNode.color = "purple"
 
-#returns a tuple of the coordinates that the boss is in
-def findTargetNode(app):
+def setTargetNode(app, col, row):
 
-    targetX = app.targetCoords[0]
-    targetY = app.targetCoords[1]
+    #checks to see if the node is in bounds of the grid
+    if 0 <= col < app.numBlocksWide and 0 <= row < app.numBlocksHigh:
+        if app.targetNode:
+            app.targetNode.color = app.targetNode.baseColor
+        app.targetNode = app.matrix[row][col]
+        app.targetNode.color = "red"
+
+def findTargetNode(app, targetX, targetY):
 
     deltaX = targetX - app.charX
     deltaY = targetY - app.charY
@@ -789,14 +993,18 @@ def findTargetNode(app):
     col = int(x // app.nodeWidth )
     row = int(y // app.nodeHeight )
 
-    #checks to see if the node is in bounds of the grid
-    if 0 <= col < app.numBlocksWide and 0 <= row < app.numBlocksHigh:
-        if app.targetNode:
-            app.targetNode.color = app.targetNode.baseColor
-        app.targetNode = app.matrix[row][col]
-        app.targetNode.color = "red"
-        return (x, y)
+    return (col, row)
+
+def checkCanRightClick(app, row, col):
+
+    if (0 < col or col >= app.numBlocksWide or 0 > row or row >= app.numBlocksHigh):
+        return False
+
+    if app.matrix[row][col].traversable == False:
+        return False
     
+    return True
+
 #A* pathfinding algorithm
 def pathfinding(app, startNode, endNode):
 
@@ -893,18 +1101,18 @@ def getStraightDistance(nodeA, nodeB):
 #creates a list of nodes that the char has to travel to
 def path(app, begin, cur):
 
-    app.path = []
+    pathList = []
 
     while (cur != begin):
-        app.path.append(cur)
+        pathList.append(cur)
         cur = cur.parent
 
-    return app.path
+    return pathList
 
 #removes the next node to move to from the list and moves there
 def pathfindingMovement(app):
 
-    cur = app.path.pop()
+    cur = app.charPath.pop()
 
     xDistanceFromGridTopLeft = cur.x * app.nodeWidth + app.nodeWidth/2
     yDistanceFromGridTopLeft = cur.y * app.nodeHeight + app.nodeHeight/2
@@ -915,6 +1123,158 @@ def pathfindingMovement(app):
     setTarget(app, x, y)
     setMoveTo(app)
 
+# #removes the next node to move to from the list and moves there
+def setBossPathfindingMovement(app):
+
+    cur = app.bossPath.pop()
+    app.boss1.targetGridX = cur.x
+    app.boss1.targetGridY = cur.y
+
+def bossPathfindingMovement(app):
+
+    xDistanceFromGridTopLeft = app.boss1.targetGridX * app.nodeWidth + app.nodeWidth/2
+    yDistanceFromGridTopLeft = app.boss1.targetGridY * app.nodeHeight + app.nodeHeight/2
+
+    app.boss1.targetX = app.width/2 - app.backroundWidth/2 - app.frameshiftX + xDistanceFromGridTopLeft
+    app.boss1.targetY = app.gameHeight/2 - app.backroundHeight/2 - app.frameshiftY + yDistanceFromGridTopLeft
+
+    x = app.boss1.x - app.frameshiftX
+    y = app.boss1.y - app.frameshiftY
+
+    deltaX = (app.boss1.targetX-x)
+    deltaY = (app.boss1.targetY-y)
+
+    deltaY = -deltaY 
+
+    hypotenuse = pythagoreanTheorem(deltaX, deltaY)
+    
+    if hypotenuse == 0:
+        app.boss1.x, app.boss1.y = app.boss1.targetX + app.frameshiftX, app.boss1.targetY + app.frameshiftY
+        app.boss1.isMoving = False
+    else:
+        if deltaX >= 0:
+            app.boss1.targetAngle = math.asin(deltaY/hypotenuse)
+        else:
+            app.boss1.targetAngle = math.pi - math.asin(deltaY/hypotenuse)
+        
+        graphicsHorizontalMovement = deltaX/hypotenuse * app.boss1.speed
+        graphicsVerticalMovement = -(deltaY/hypotenuse * app.boss1.speed)
+
+        #move Boss
+        if distance(app, app.boss1.x - app.frameshiftX, app.boss1.y - app.frameshiftY, app.boss1.targetX, app.boss1.targetY) > app.boss1.speed:
+
+            app.boss1.x += graphicsHorizontalMovement
+            app.boss1.y += graphicsVerticalMovement
+        else:
+
+            app.boss1.x, app.boss1.y = app.boss1.targetX + app.frameshiftX, app.boss1.targetY + app.frameshiftY
+            app.boss1.isMoving = False
+        
+        bossAttack(app)
+
+#=======================================#=======================================
+##charaterUpgrades
+#=======================================#=======================================
+
+#Uprgrade selector
+#redrawAll
+def drawUpgradeSelector(app):
+
+    rectWidth = app.width/5
+    gapWidth = rectWidth/4
+    rectHeight = app.height/1.5
+    startX = app.width/2 - gapWidth * 1.5 - rectWidth * 1.5
+
+    app.upgradeBoxes1.rectWidth = rectWidth
+    app.upgradeBoxes1.rectHeight = rectHeight
+    app.upgradeBoxes1.gapWidth = gapWidth
+    app.upgradeBoxes1.startX = startX
+
+    for i in range(4):
+
+        x = startX + i * (gapWidth + rectWidth)
+
+        if app.upgradeBoxes1.highlighted == i:
+            drawRect(x, app.height/2, rectWidth+20, rectHeight+20, align = "center", fill = "cyan")
+        drawRect(x, app.height/2, rectWidth, rectHeight, align = "center", fill = "white", border = "black")
+        drawRect(x, app.height/2, rectWidth, rectHeight, align = "center", fill = "black", border = "black", opacity = 30)
+
+        drawCharUpgrades(app, x, i)
+
+#redrawAll
+def drawCharUpgrades(app, x, i):
+
+    drawLabel(app.charUpgrades1.fourUpgrades[i].line1, x, app.height/2 - app.height*1/6, size = 25, bold = True)
+    drawLabel(app.charUpgrades1.fourUpgrades[i].line2, x, app.height/2 - app.height*1/6 + 40, size = 25, bold = True)
+
+#called by on mouse press
+def selectUpgrade(app, mouseX, mouseY):
+    #finds if the chracter click in a box
+    #takes the id of the upgrade the character clicked on and turns it on
+    #resets the situation to 0
+    #resets the four upgrades
+
+    i = findBoxOfMouse(app, mouseX, mouseY)
+
+    if i != None:
+        upgrd = app.charUpgrades1.fourUpgrades[i]
+        upgrd.activate(app)
+        id = upgrd.id
+        app.charUpgrades1.list[id] = True
+        app.situation = 0
+        app.charUpgrades1.fourUpgrades = []
+
+def checkIfHoverOverUpgrade(app, mouseX, mouseY):
+    #returns the index of the box you are hovering over
+
+    i = findBoxOfMouse(app, mouseX, mouseY)
+
+    app.upgradeBoxes1.highlighted = i
+
+#returns the index of the box you are hovering over
+def findBoxOfMouse(app, mouseX, mouseY):
+
+    rectWidth = app.upgradeBoxes1.rectWidth
+    rectHeight = app.upgradeBoxes1.rectHeight
+    gapWidth = app.upgradeBoxes1.gapWidth
+    startX = app.upgradeBoxes1.startX
+
+    inBox = False
+    for i in range(4):
+        
+        x = app.upgradeBoxes1.startX + i * (app.upgradeBoxes1.gapWidth + app.upgradeBoxes1.rectWidth)
+        if inRect(app, x, app.height/2, app.upgradeBoxes1.rectHeight, app.upgradeBoxes1.rectWidth, mouseX, mouseY):
+            return i
+        
+    return None
+
+def get4Upgrades(app):
+    #reset and generates the 4 upgrades that will be selected
+
+    numberOfUpgrades = len(app.charUpgrades1.list)-1
+    index = random.randint(1, numberOfUpgrades)
+    usedIndexes = set()
+
+    counter = 0
+    while counter < 4:
+        if app.charUpgrades1.list[index] == False and index not in usedIndexes:
+            app.charUpgrades1.fourUpgrades.append(app.charUpgrades1.Objects[index])
+            usedIndexes.add(index)
+            counter+=1
+        index = random.randint(0, numberOfUpgrades)
+
+#checks how many upgrades that the character doesn't have
+def getNumUpgradesLeft(app):
+
+    counter = 0
+    
+    for i in range(len(app.charUpgrades1.list)):
+        if app.charUpgrades1.list[i] == False:
+            counter += 1
+
+    if counter >= 4:
+        return True
+    return False
 
 #=======================================
 #MAIN
