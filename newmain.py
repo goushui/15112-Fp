@@ -453,7 +453,7 @@ def redrawAll(app):
 #DRAWING MAP
 def drawMap(app):
     
-    drawRect(app.width/2-app.frameshiftX, app.gameHeight/2-app.frameshiftY, app.backroundWidth+1000, app.backroundHeight+1000, align = "center", fill = "lightblue")
+    drawRect(app.width/2-app.frameshiftX, app.gameHeight/2-app.frameshiftY, app.backroundWidth+2000, app.backroundHeight+2000, align = "center", fill = "lightblue")
     # drawPILImage takes in a PIL image object and the left-top coordinates
     drawImage(app.backround, app.width/2-app.frameshiftX, app.gameHeight/2-app.frameshiftY, align = "center")
 
@@ -1237,8 +1237,7 @@ def drawUpgradeSelector(app):
 
         if app.upgradeBoxes1.highlighted == i:
             drawRect(x, app.height/2, rectWidth+20, rectHeight+20, align = "center", fill = "cyan")
-        drawRect(x, app.height/2, rectWidth, rectHeight, align = "center", fill = "white", border = "black")
-        drawRect(x, app.height/2, rectWidth, rectHeight, align = "center", fill = "black", border = "black", opacity = 30)
+        drawRect(x, app.height/2, rectWidth, rectHeight, align = "center", fill = "pink", border = "black")
 
         drawCharUpgrades(app, x, i)
 
