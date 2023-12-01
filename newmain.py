@@ -7,13 +7,13 @@ import random
 
 """
 Why is my game laggy?
-are my comments okay?
 
 to do
 -make randomly generted map
 -make sprites
--make pathfinding
 -add images for the upgrades
+-cooldown
+-more upgrades
 
 
 
@@ -22,7 +22,9 @@ Citations:
 - framseshift got the idea of moving all the things on the screen from 2022 page
 - Gif animation code from F23_demos 11/21 Lecture
 - map backround code from F23_demos 11/21 Lecture
-- pathfinding algorithm from https://www.youtube.com/watch?v=-L-WgKMFuhE&t=405s used psudocode
+- pathfinding algorithm from https://www.youtube.com/watch?v=-L-WgKMFuhE&t=405s used pseudocode
+- got the idea of node map https://www.youtube.com/watch?v=nhiFx28e7JY
+- got the idea of a parent node and finding "potentialNewGCost" https://www.youtube.com/watch?v=mZfyt03LDH4
 """
 
 class boss:
