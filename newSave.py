@@ -752,6 +752,11 @@ def bossMove(app):
             graphicsHorizontalMovement = deltaX/hypotenuse * app.boss1.speed
             graphicsVerticalMovement = -(deltaY/hypotenuse * app.boss1.speed)
 
+            #chracterUpgrades - freezing lasers
+            if app.freezingLazers1.bossFreezeCD > 0:
+                bossXVelocity *= app.freezingLazers1.bossSpeedMultiplier
+                bossYVelocity *= app.freezingLazers1.bossSpeedMultiplier
+
             #move Boss
             app.boss1.x += graphicsHorizontalMovement
             app.boss1.y += graphicsVerticalMovement

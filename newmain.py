@@ -22,7 +22,7 @@ Citations:
 - framseshift got the idea of moving all the things on the screen from 2022 page
 - Gif animation code from F23_demos 11/21 Lecture
 - map backround code from F23_demos 11/21 Lecture
-- pathfinding algorithm from https://www.youtube.com/watch?v=-L-WgKMFuhE&t=405s
+- pathfinding algorithm from https://www.youtube.com/watch?v=-L-WgKMFuhE&t=405s used psudocode
 """
 
 class boss:
@@ -37,7 +37,7 @@ class boss:
         self.y = 0
         self.lastX = 0
         self.lastY = 0
-        self.size = 30
+        self.size = 50
         self.color = "purple"
         self.respawnTimer = 1
         self.slowness = 0
@@ -94,6 +94,29 @@ class Node:
 
     def clacFCost(self):
         self.fCost = self.gCost + self.hCost
+
+        
+    #finds the distanace between 2 nodes if there are no obsticals
+    def getStraightDistance(self, other):
+
+        if isinstance(other,Node):
+            sum = 0
+
+            deltaX = abs(self.x - other.x)
+            deltaY = abs(self.y - other.y)
+
+            #summing up diagonal lengths
+            while deltaX > 0 and deltaY > 0:
+                deltaX -= 1
+                deltaY -= 1
+
+                sum += 14
+
+            #summing up axial lengths
+            sum += (deltaX * 10)
+            sum += (deltaY * 10)
+
+            return sum
 
     def __eq__(self, other):
 
@@ -269,6 +292,7 @@ def reset(app):
 def resetBoss(app):
 
     app.boss1.reset()
+    makeBossStronger(app)
 
     randBossSpawn(app)
 
@@ -379,6 +403,9 @@ def randBossSpawn(app):
         app.boss1.x = app.width/2 + app.backroundWidth/2 - app.nodeWidth*3/2
         app.boss1.y = app.gameHeight/2 + app.backroundHeight/2 - app.nodeHeight*3/2
 
+def makeBossStronger(app):
+    app.boss1.totalHealth *= 2
+    app.boss1.speed += 1
 #==============================================================================
 #==============================================================================
 #DRAWING
@@ -538,8 +565,6 @@ def onKeyPress(app, key):
         if key == 'p':
             if app.situation == 0:
                 app.situation = 3
-            elif app.situation == 3:
-                app.situation = 0
 
         elif key == 's':
             stopMoving(app)
@@ -552,6 +577,9 @@ def onKeyPress(app, key):
     elif app.situation == 1:
         if key == 'l':
             reset(app)
+
+    elif app.situation == 3:
+        app.situation = 0
 
 #stops the chracter form moving
 def stopMoving(app):
@@ -579,6 +607,44 @@ def onMousePress(app, mouseX, mouseY, button):
         if button == 0:
             selectUpgrade(app, mouseX, mouseY)
 
+#called by onMousePress returns
+def findTargetNode(app, targetX, targetY):
+
+    deltaX = targetX - app.charX
+    deltaY = targetY - app.charY
+
+    xDistanceFromCenterToTopLeft = app.frameshiftX + app.backroundWidth/2
+    yDistanceFromCenterToTopLeft = app.frameshiftY + app.backroundHeight/2
+
+    x = deltaX + xDistanceFromCenterToTopLeft
+    y = deltaY + yDistanceFromCenterToTopLeft
+
+    col = int(x // app.nodeWidth )
+    row = int(y // app.nodeHeight )
+
+    return (col, row)
+
+#sets app.targetNode if the col and row are valid
+def setTargetNode(app, col, row):
+
+    #checks to see if the node is in bounds of the grid
+    if 0 <= col < app.numBlocksWide and 0 <= row < app.numBlocksHigh:
+        if app.targetNode:
+            app.targetNode.color = app.targetNode.baseColor
+        app.targetNode = app.matrix[row][col]
+        app.targetNode.color = "red"
+
+#returns the col/row you are clicking is a valid movable tile
+def checkCanRightClick(app, row, col):
+
+    if (0 < col or col >= app.numBlocksWide or 0 > row or row >= app.numBlocksHigh):
+        return False
+
+    if app.matrix[row][col].traversable == False:
+        return False
+    
+    return True
+
 # sets - app.charIsMoving, app.moveToCoords, app.moveToAngle
 def setMoveTo(app):
 
@@ -597,13 +663,11 @@ def onMouseMove(app, mouseX, mouseY):
     #characterUpgrades
     elif app.situation == 2:
         checkIfHoverOverUpgrade(app, mouseX, mouseY)
-    
-def setTarget(app, mouseX, mouseY):
-    #finds the angle that the mouse is facing
-    #assigns the target coordinates of the mouse
-    #sets app.targetCoords, app.targetDistance, app.character1.targetAngle
 
-    #makes sure the point is in bounds
+#finds the angle that the mouse is facing
+#assigns the target coordinates of the mouse
+#sets app.targetCoords, app.targetDistance, app.character1.targetAngle  
+def setTarget(app, mouseX, mouseY):
 
     deltaX = mouseX - app.charX
     deltaY = mouseY - app.charY
@@ -681,7 +745,6 @@ def onStep(app):
         app.boss1.lastX = app.boss1.x
         app.boss1.lastY = app.boss1.y
 
-
 #decreases ability cooldowns
 def abilityCooldowns(app):
 
@@ -726,6 +789,7 @@ def animateChar(app):
         app.bossSpriteCounter2 = (app.bossSpriteCounter2 + 1) % len(app.bossSpriteList2)
 
 #moves the boss towards the character onStep
+#not in use
 def bossMove(app):
     
     if app.boss1.health:
@@ -751,6 +815,11 @@ def bossMove(app):
             
             graphicsHorizontalMovement = deltaX/hypotenuse * app.boss1.speed
             graphicsVerticalMovement = -(deltaY/hypotenuse * app.boss1.speed)
+
+            #chracterUpgrades - freezing lasers
+            if app.freezingLazers1.bossFreezeCD > 0:
+                bossXVelocity *= app.freezingLazers1.bossSpeedMultiplier
+                bossYVelocity *= app.freezingLazers1.bossSpeedMultiplier
 
             #move Boss
             app.boss1.x += graphicsHorizontalMovement
@@ -786,8 +855,8 @@ def checkBossDead(app):
         if getNumUpgradesLeft(app):
             app.situation = 2
             get4Upgrades(app)
-#loops through all the lazers and moves them
-#checks if any lazers collide with the boss and deals damage to the boss if so
+
+#lasers - loops through all the lazers and moves them checks if any lazers collide with the boss and deals damage to the boss if so
 def moveLasers(app):
 
     i = 0
@@ -798,6 +867,11 @@ def moveLasers(app):
         
         #if laser hits boss
         if app.boss1.health and distance(app, app.boss1.x, app.boss1.y, app.lasers1.lasers[i][0], app.lasers1.lasers[i][1]) < app.boss1.size: 
+
+            #characterUpgrades - checks for freezing laser
+            if app.charUpgrades1.list[0]:
+                app.freezingLazers1.bossSpeedMultiplier = app.freezingLazers1.setBossSpeedMultiplier
+                app.freezingLazers1.bossFreezeCD = app.freezingLazers1.setBossFreezeCD 
 
             #does damage
             app.boss1.health -= app.lasers1.dmg
@@ -839,6 +913,7 @@ def inRect(app, centerX, centerY, height, width, pointerX, pointerY):
 #walls
 #=======================================
 
+#walls - creates walls
 def generateWalls(app):
 
     app.walls = set()
@@ -881,11 +956,14 @@ def generateWalls(app):
         app.matrix[r][c].baseColor = "black"
         app.walls.add(app.matrix[r][c])
 
-#=======================================
+#===============================================================================================
 #pathfinding
-#=======================================
+#===============================================================================================
 
-#creates a gird of node objects
+#=======================================
+#grid
+#=======================================
+#creates a gird of node objects as the map
 def generateGrid(app):
 
     #variables
@@ -928,6 +1006,9 @@ def drawGrid(app):
 
         y += app.nodeHeight
 
+#=======================================
+#find Nodes of boss and char
+#=======================================
 #returns a tuple of the coordinates that the chracter is in
 def findCharNode(app):
 
@@ -970,41 +1051,9 @@ def findBossNode(app):
             app.bossNode = app.matrix[row][col]
             app.bossNode.color = "purple"
 
-def setTargetNode(app, col, row):
-
-    #checks to see if the node is in bounds of the grid
-    if 0 <= col < app.numBlocksWide and 0 <= row < app.numBlocksHigh:
-        if app.targetNode:
-            app.targetNode.color = app.targetNode.baseColor
-        app.targetNode = app.matrix[row][col]
-        app.targetNode.color = "red"
-
-def findTargetNode(app, targetX, targetY):
-
-    deltaX = targetX - app.charX
-    deltaY = targetY - app.charY
-
-    xDistanceFromCenterToTopLeft = app.frameshiftX + app.backroundWidth/2
-    yDistanceFromCenterToTopLeft = app.frameshiftY + app.backroundHeight/2
-
-    x = deltaX + xDistanceFromCenterToTopLeft
-    y = deltaY + yDistanceFromCenterToTopLeft
-
-    col = int(x // app.nodeWidth )
-    row = int(y // app.nodeHeight )
-
-    return (col, row)
-
-def checkCanRightClick(app, row, col):
-
-    if (0 < col or col >= app.numBlocksWide or 0 > row or row >= app.numBlocksHigh):
-        return False
-
-    if app.matrix[row][col].traversable == False:
-        return False
-    
-    return True
-
+#=======================================
+#pathfinding
+#=======================================
 #A* pathfinding algorithm
 def pathfinding(app, startNode, endNode):
 
@@ -1028,7 +1077,7 @@ def pathfinding(app, startNode, endNode):
         closed.append(cur)
 
         if cur == endNode:
-            return path(app, startNode, endNode)
+            return getPath(app, startNode, endNode)
 
         #loops through the neighbors of the cur node
         for dx in range(-1, 2):
@@ -1043,12 +1092,13 @@ def pathfinding(app, startNode, endNode):
                         if canWalkTo(app, cur, neighbor) == False or neighbor in closed:
                             continue
                         else:
-                            potentialNewGCost = cur.gCost + getStraightDistance(cur, neighbor)
-
+                            #gets the gCost of the neighbor
+                            potentialNewGCost = cur.gCost + cur.getStraightDistance(neighbor)
+                            #if the neighbor is in open and the new g cost is smaller than the old one or neighor is not in open then we calculate its f cost, set its parent, and add it to open
                             if (neighbor in open and potentialNewGCost < neighbor.gCost) or neighbor not in open:
 
                                 neighbor.gCost = potentialNewGCost
-                                neighbor.hCost = getStraightDistance(cur, endNode)
+                                neighbor.hCost = neighbor.getStraightDistance(endNode)
                                 neighbor.clacFCost()
                                 neighbor.parent = cur
 
@@ -1077,29 +1127,8 @@ def canWalkTo(app, startingNode, targetNode):
 
     return True
 
-#finds the distanace between 2 nodes if there are no obsticals
-def getStraightDistance(nodeA, nodeB):
-
-    sum = 0
-
-    deltaX = abs(nodeA.x - nodeB.x)
-    deltaY = abs(nodeA.y - nodeB.y)
-
-    #summing up diagonal lengths
-    while deltaX > 0 and deltaY > 0:
-        deltaX -= 1
-        deltaY -= 1
-
-        sum += 14
-
-    #summing up axial lengths
-    sum += (deltaX * 10)
-    sum += (deltaY * 10)
-
-    return sum
-
 #creates a list of nodes that the char has to travel to
-def path(app, begin, cur):
+def getPath(app, begin, cur):
 
     pathList = []
 
@@ -1109,7 +1138,11 @@ def path(app, begin, cur):
 
     return pathList
 
-#removes the next node to move to from the list and moves there
+#=======================================
+#pathfinding
+#=======================================
+
+#removes the next node to move to from the list and sets moveToThere
 def pathfindingMovement(app):
 
     cur = app.charPath.pop()
@@ -1123,13 +1156,14 @@ def pathfindingMovement(app):
     setTarget(app, x, y)
     setMoveTo(app)
 
-# #removes the next node to move to from the list and moves there
+#removes the next node to move to from the list and sets the coords for the boss to move to
 def setBossPathfindingMovement(app):
 
     cur = app.bossPath.pop()
     app.boss1.targetGridX = cur.x
     app.boss1.targetGridY = cur.y
 
+#moves the boss
 def bossPathfindingMovement(app):
 
     xDistanceFromGridTopLeft = app.boss1.targetGridX * app.nodeWidth + app.nodeWidth/2
@@ -1163,6 +1197,11 @@ def bossPathfindingMovement(app):
         #move Boss
         if distance(app, app.boss1.x - app.frameshiftX, app.boss1.y - app.frameshiftY, app.boss1.targetX, app.boss1.targetY) > app.boss1.speed:
 
+            #chracterUpgrades - freezing lasers
+            if app.freezingLazers1.bossFreezeCD > 0:
+                graphicsHorizontalMovement *= app.freezingLazers1.bossSpeedMultiplier
+                graphicsVerticalMovement *= app.freezingLazers1.bossSpeedMultiplier
+
             app.boss1.x += graphicsHorizontalMovement
             app.boss1.y += graphicsVerticalMovement
         else:
@@ -1172,9 +1211,9 @@ def bossPathfindingMovement(app):
         
         bossAttack(app)
 
-#=======================================#=======================================
+#===============================================================================================
 ##charaterUpgrades
-#=======================================#=======================================
+#===============================================================================================
 
 #Uprgrade selector
 #redrawAll
@@ -1283,11 +1322,6 @@ def main():
     runApp()
 
 main()
-
-
-
-
-
 
 
 
