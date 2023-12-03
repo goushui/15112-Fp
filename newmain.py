@@ -10,7 +10,6 @@ Why is my game laggy?
 
 to do
 -make randomly generted map
--make sprites
 -add images for the upgrades
 -cooldown
 -more upgrades
@@ -18,6 +17,8 @@ to do
 
 
 Citations:
+- character GIF is my drawing based off the League of Leagends chracter Teemo
+- boss GIF is my drawing based off the League of Leagends chracter Garen
 - game idea from Vampire Survivors
 - framseshift got the idea of moving all the things on the screen from 2022 page
 - Gif animation code from F23_demos 11/21 Lecture
@@ -71,7 +72,8 @@ class lasers:
         self.lasers = []
         self.dmg = 50
         self.color = "red"
-        self.width = 2
+        self.width = 5
+        self.length = 10
         self.speed = 10
         self.setCD = 50
         self.currentCD = 0
@@ -322,70 +324,108 @@ def generateImagesAndGifs(app):
     #char facing right
     if True:
 
-        myGif = Image.open('images/kirb.gif')
+        # myGif = myGif.convert('RGBA')
+        scale = 6
         app.charSpriteList1 = []
-        for frame in range(myGif.n_frames):
-            #Set the current frame
-            myGif.seek(frame)
-            #Resize the image
-            fr = myGif.resize((myGif.size[0]//2, myGif.size[1]//2))
-            #Flip the image
-            fr = fr.transpose(Image.FLIP_LEFT_RIGHT)
-            #Convert to CMUImage
-            fr = CMUImage(fr)
-            #Put in our sprite list
-            app.charSpriteList1.append(fr)
+        myGif = Image.open('images/teemoRight1.tiff')
+        #Resize the image
+        fr = myGif.resize((myGif.size[0]//scale, myGif.size[1]//scale))
+        #Flip the image
+        fr = fr.transpose(Image.FLIP_LEFT_RIGHT)
+        #Convert to CMUImage
+        fr = CMUImage(fr)
+        #Put in our sprite list
+        app.charSpriteList1.append(fr)
+
+
+        myGif = Image.open('images/teemoRight2.tiff')
+        #Resize the image
+        fr = myGif.resize((myGif.size[0]//scale, myGif.size[1]//scale))
+        #Flip the image
+        fr = fr.transpose(Image.FLIP_LEFT_RIGHT)
+        #Convert to CMUImage
+        fr = CMUImage(fr)
+        #Put in our sprite list
+        app.charSpriteList1.append(fr)
         app.charSpriteCounter1 = 0
 
     #char facing left
     if True:
-        myGif = Image.open('images/kirb2.gif')
+        scale = 6
         app.charSpriteList2 = []
-        for frame in range(myGif.n_frames):
-            #Set the current frame
-            myGif.seek(frame)
-            #Resize the image
-            fr = myGif.resize((myGif.size[0]//2, myGif.size[1]//2))
-            #Flip the image
-            fr = fr.transpose(Image.FLIP_LEFT_RIGHT)
-            #Convert to CMUImage
-            fr = CMUImage(fr)
-            #Put in our sprite list
-            app.charSpriteList2.append(fr)
+        myGif = Image.open('images/teemoLeft1.tiff')
+        #Resize the image
+        fr = myGif.resize((myGif.size[0]//scale, myGif.size[1]//scale))
+        #Flip the image
+        fr = fr.transpose(Image.FLIP_LEFT_RIGHT)
+        #Convert to CMUImage
+        fr = CMUImage(fr)
+        #Put in our sprite list
+        app.charSpriteList2.append(fr)
+
+        myGif = Image.open('images/teemoLeft2.tiff')
+        #Resize the image
+        fr = myGif.resize((myGif.size[0]//scale, myGif.size[1]//scale))
+        #Flip the image
+        fr = fr.transpose(Image.FLIP_LEFT_RIGHT)
+        #Convert to CMUImage
+        fr = CMUImage(fr)
+        #Put in our sprite list
+        app.charSpriteList2.append(fr)
         app.charSpriteCounter2 = 0
 
     #boss facing right
-
-        myGif = Image.open('images/kirb.gif')
+    if True:
         app.bossSpriteList1 = []
-        for frame in range(myGif.n_frames):
-            #Set the current frame
-            myGif.seek(frame)
+        scale = 3
+
+        images = ['images/garenLeft1.tiff', 
+                  'images/garenLeft2.tiff', 
+                  'images/garenLeft3.tiff', 
+                  'images/garenLeft4.tiff', 
+                  'images/garenLeft5.tiff', 
+                  'images/garenLeft6.tiff', 
+                  'images/garenLeft7.tiff', 
+                  'images/garenLeft8.tiff']
+
+        for i in range(8):
+
+            myGif = Image.open(images[i])
             #Resize the image
-            fr = myGif.resize((myGif.size[0]//2, myGif.size[1]//2))
+            fr = myGif.resize((myGif.size[0]//scale, myGif.size[1]//scale))
             #Flip the image
             fr = fr.transpose(Image.FLIP_LEFT_RIGHT)
             #Convert to CMUImage
             fr = CMUImage(fr)
             #Put in our sprite list
             app.bossSpriteList1.append(fr)
+
         app.bossSpriteCounter1 = 0
 
     #boss facing left
     if True:
-        myGif = Image.open('images/kirb2.gif')
         app.bossSpriteList2 = []
-        for frame in range(myGif.n_frames):
-            #Set the current frame
-            myGif.seek(frame)
+        scale = 3
+
+        images = ['images/garenLeft1.tiff', 
+                'images/garenLeft2.tiff', 
+                'images/garenLeft3.tiff', 
+                'images/garenLeft4.tiff', 
+                'images/garenLeft5.tiff', 
+                'images/garenLeft6.tiff', 
+                'images/garenLeft7.tiff', 
+                'images/garenLeft8.tiff']
+
+        for i in range(8):
+
+            myGif = Image.open(images[i])
             #Resize the image
-            fr = myGif.resize((myGif.size[0]//2, myGif.size[1]//2))
-            #Flip the image
-            fr = fr.transpose(Image.FLIP_LEFT_RIGHT)
+            fr = myGif.resize((myGif.size[0]//scale, myGif.size[1]//scale))
             #Convert to CMUImage
             fr = CMUImage(fr)
             #Put in our sprite list
             app.bossSpriteList2.append(fr)
+
         app.bossSpriteCounter2 = 0
 
 #sets the starting coordinates of the boss to a random corner grid
@@ -489,19 +529,13 @@ def drawCharacterHealthbar(app):
     botMargin = 40
     border = 4
     
-    drawRect(leftMargin+healthBarSize/2, app.height-botMargin, healthBarSize + border, 30 + border, align = 'center', border = 'black', borderWidth = 100)
+    drawRect(leftMargin+healthBarSize/2, app.height-botMargin, healthBarSize + border, 32 + border, align = 'center', border = 'black', borderWidth = 100)
+    drawRect(leftMargin+healthBarSize/2, app.height-botMargin, healthBarSize + border, 30 + border, align = 'center', fill = "grey")
+    rectWidth = app.charHealth / app.charTotalHealth * healthBarSize
+    startX = leftMargin
     
-    rectWidth = healthBarSize/app.charTotalHealth
-    startX = leftMargin + rectWidth/2
-    
-    for i in range(app.charTotalHealth):
-        
-        if i < app.charHealth:
-            color = 'green'
-        elif i >= app.charHealth:
-            color = rgb(200, 200, 200)
-        
-        drawRect(startX + i*rectWidth, app.height-botMargin, rectWidth, 30, align = 'center', fill = color)
+    if rectWidth > 0:
+        drawRect(startX, app.height-botMargin - 15, rectWidth, 30, fill = "green")
         
     drawLabel(f'{app.charHealth} / {app.charTotalHealth}', leftMargin+healthBarSize/2, app.height-botMargin, size = 20)
     
@@ -522,19 +556,15 @@ def drawBossHealthbar(app):
     healthBarSize = 800
     border = 4
     
-    drawRect(app.width/2, 40, healthBarSize + border, 30 + border, align = 'center', border = 'black', borderWidth = 100)
-    
-    rectWidth = healthBarSize/app.boss1.totalHealth
-    startX = app.width/2-healthBarSize/2+rectWidth/2
-    
-    for i in range(app.boss1.totalHealth):
-        
-        if i < app.boss1.health:
-            color = 'red'
-        elif i >= app.boss1.health:
-            color = rgb(200, 200, 200)
-        
-        drawRect(startX + i*rectWidth, 40, rectWidth, 30, align = 'center', fill = color)
+    drawRect(app.width/2, 40, healthBarSize + border, 32 + border, align = 'center', border = 'black', borderWidth = 100, fill = "black")
+    drawRect(app.width/2, 40, healthBarSize + border, 30 + border, align = 'center', fill = "grey")
+
+
+    rectWidth = app.boss1.health / app.boss1.totalHealth * healthBarSize
+    startX = app.width/2-healthBarSize/2
+
+    if rectWidth > 0:
+        drawRect(startX, 25, rectWidth, 30, fill = "red")
         
     drawLabel(f'{app.boss1.health} / {app.boss1.totalHealth}', app.width/2, 40, size = 20)
 
@@ -545,11 +575,11 @@ def drawPointerTarget(app):
 def drawLasers(app):
     for laser in app.lasers1.lasers:
         #creates start and end points for the lasets
-        laserXStart = laser[0] - math.cos(laser[2]) * 7
-        laserYStart = laser[1] + math.sin(laser[2]) * 7
+        laserXStart = laser[0] - math.cos(laser[2]) * app.lasers1.length
+        laserYStart = laser[1] + math.sin(laser[2]) * app.lasers1.length
         
-        laserXEnd = laser[0] + math.cos(laser[2]) * 7
-        laserYEnd = laser[1] - math.sin(laser[2]) * 7
+        laserXEnd = laser[0] + math.cos(laser[2]) * app.lasers1.length
+        laserYEnd = laser[1] - math.sin(laser[2]) * app.lasers1.length
         
         drawLine(laserXStart - app.frameshiftX, laserYStart - app.frameshiftY, laserXEnd - app.frameshiftX, laserYEnd - app.frameshiftY, fill = app.lasers1.color, lineWidth = app.lasers1.width)
 
@@ -780,12 +810,13 @@ def characterMove(app):
 #GIF
 def animateChar(app):
     #Set spriteCounter to next frame
-    if app.time % 3 == 0:
+    if app.time % 15 == 0:
 
         #char
         app.charSpriteCounter1 = (app.charSpriteCounter1 + 1) % len(app.charSpriteList1)
         app.charSpriteCounter2 = (app.charSpriteCounter2 + 1) % len(app.charSpriteList2)
 
+    if app.time % 1 == 0:
         #boss
         app.bossSpriteCounter1 = (app.bossSpriteCounter1 + 1) % len(app.bossSpriteList1)
         app.bossSpriteCounter2 = (app.bossSpriteCounter2 + 1) % len(app.bossSpriteList2)
