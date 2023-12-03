@@ -911,7 +911,9 @@ def moveLasers(app):
             app.lasers1.lasers.pop(i)
             checkBossDead(app)
         
-
+        #removes lasers if they collide with a wall
+        elif doesLasersHitWall(app, app.lasers1.lasers[i][0] - app.frameshiftX, app.lasers1.lasers[i][1] - app.frameshiftY) == True:
+            app.lasers1.lasers.pop(i)
         #lasers expires after some time
         elif app.lasers1.lasers[i][3] >= 200:
             app.lasers1.lasers.pop(i)
@@ -919,6 +921,12 @@ def moveLasers(app):
             app.lasers1.lasers[i][3] += 1
             i+=1
 
+#removes lasers if they collide with a wall
+def doesLasersHitWall(app, x, y):
+    col, row = findTargetNode(app, x, y)
+    if app.matrix[row][col].traversable == False:
+        return True
+    return False
 
 
 #=======================================
