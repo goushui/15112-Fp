@@ -316,6 +316,7 @@ def generateImagesAndGifs(app):
         #makes the size of the backround
         app.backroundWidth = 1000
         app.backroundHeight = 1000
+        app.nodeSize = 50
         app.backround = app.backround.resize((app.backroundWidth, app.backroundHeight))
 
         # Cast image type to CMUImage to allow for faster drawing
@@ -913,7 +914,8 @@ def moveLasers(app):
         
         #removes lasers if they collide with a wall
         elif doesLasersHitWall(app, app.lasers1.lasers[i][0] - app.frameshiftX, app.lasers1.lasers[i][1] - app.frameshiftY) == True:
-            app.lasers1.lasers.pop(i)
+            if True:
+                app.lasers1.lasers.pop(i)
         #lasers expires after some time
         elif app.lasers1.lasers[i][3] >= 200:
             app.lasers1.lasers.pop(i)
@@ -1009,8 +1011,8 @@ def generateGrid(app):
 
     #variables
     if True:
-        app.nodeWidth = 100
-        app.nodeHeight = 100
+        app.nodeWidth = app.nodeSize
+        app.nodeHeight = app.nodeSize
         app.numBlocksWide = app.backroundWidth//app.nodeWidth
         app.numBlocksHigh = app.backroundHeight//app.nodeHeight
         app.matrix = []
@@ -1053,11 +1055,13 @@ def drawGrid(app):
 #returns a tuple of the coordinates that the chracter is in
 def findCharNode(app):
 
-    x = app.frameshiftX + app.backroundWidth/2
-    y = app.frameshiftY + app.backroundHeight/2
+    # x = app.frameshiftX + app.backroundWidth/2
+    # y = app.frameshiftY + app.backroundHeight/2
 
-    col = int(x // app.nodeWidth)
-    row = int(y // app.nodeHeight)
+    # col = int(x // app.nodeWidth)
+    # row = int(y // app.nodeHeight)
+
+    col, row = findTargetNode(app, app.width/2, app.gameHeight/2)
 
     #checks to see if the node is in bounds of the grid
     if 0 <= col < app.numBlocksWide and 0 <= row < app.numBlocksHigh:
@@ -1074,11 +1078,13 @@ def findCharNode(app):
 #sets the coordinates that the boss is in
 def findBossNode(app):
 
-    x = app.boss1.x + app.backroundWidth/2 - app.width/2
-    y = app.boss1.y + app.backroundHeight/2 - app.gameHeight/2
+    # x = app.boss1.x + app.backroundWidth/2 - app.width/2
+    # y = app.boss1.y + app.backroundHeight/2 - app.gameHeight/2
 
-    col = int(x // app.nodeWidth)
-    row = int(y // app.nodeHeight)
+    # col = int(x // app.nodeWidth)
+    # row = int(y // app.nodeHeight)
+
+    col, row = findTargetNode(app, app.boss1.x -  app.frameshiftX, app.boss1.y - app.frameshiftY)
 
     #checks to see if the node is in bounds of the grid
     if 0 <= col < app.numBlocksWide and 0 <= row < app.numBlocksHigh:
