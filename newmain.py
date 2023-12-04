@@ -1336,6 +1336,7 @@ def setBossPathfindingMovement(app):
 #moves the boss
 def bossPathfindingMovement(app):
 
+    #finds the angle that the boss is movinf
     xDistanceFromGridTopLeft = app.boss1.targetGridX * app.nodeWidth + app.nodeWidth/2
     yDistanceFromGridTopLeft = app.boss1.targetGridY * app.nodeHeight + app.nodeHeight/2
 
@@ -1361,6 +1362,7 @@ def bossPathfindingMovement(app):
         else:
             app.boss1.targetAngle = math.pi - math.asin(deltaY/hypotenuse)
         
+        #calculates the horizontal and vertical vectors based on angle and speed
         graphicsHorizontalMovement = deltaX/hypotenuse * app.boss1.speed
         graphicsVerticalMovement = -(deltaY/hypotenuse * app.boss1.speed)
 
