@@ -36,7 +36,7 @@ class boss:
         self.y = 0
         self.lastX = 0
         self.lastY = 0
-        self.size = 50
+        self.size = 60
         self.color = "purple"
         self.respawnTimer = 1
         self.slowness = 0
@@ -73,6 +73,9 @@ class lasers:
         self.speed = 10
         self.setCD = 50
         self.currentCD = 0
+
+        self.targetAngle = 0
+        self.targetCoords = None
 
 class Node:
 
@@ -614,7 +617,7 @@ def onKeyPress(app, key):
         #lazers
         elif key == 'q' and app.lasers1.currentCD == 0:
             app.lasers1.currentCD = app.lasers1.setCD
-            app.lasers1.lasers.append([app.charX + app.frameshiftX, app.charY + app.frameshiftY, app.targetAngle, 0])
+            app.lasers1.lasers.append([app.charX + app.frameshiftX, app.charY + app.frameshiftY, app.lasers1.targetAngle, 0])
 
 
     elif app.situation == 1:
@@ -708,7 +711,8 @@ def setMoveTo(app):
 def onMouseMove(app, mouseX, mouseY):
 
     if app.situation == 0:
-        setTarget(app, mouseX, mouseY)
+        setMoveTarget(app, mouseX, mouseY)
+        setLaserTarget(app, mouseX, mouseY)
     #characterUpgrades
     elif app.situation == 2:
         checkIfHoverOverUpgrade(app, mouseX, mouseY)
@@ -721,9 +725,10 @@ def onMouseMove(app, mouseX, mouseY):
             app.startButtonHighlighted = False
 
 #finds the angle that the mouse is facing
+#for moving
 #assigns the target coordinates of the mouse
 #sets app.targetCoords, app.targetDistance, app.character1.targetAngle  
-def setTarget(app, mouseX, mouseY):
+def setMoveTarget(app, mouseX, mouseY):
 
     deltaX = mouseX - app.charX
     deltaY = mouseY - app.charY
@@ -743,6 +748,31 @@ def setTarget(app, mouseX, mouseY):
         app.targetAngle = math.asin(deltaY/hypotenuse)
     else:
         app.targetAngle = math.pi - math.asin(deltaY/hypotenuse)
+
+#finds the angle that the mouse is facing
+#for lasers
+#assigns the target coordinates of the mouse
+#sets app.targetCoords, app.targetDistance, app.character1.targetAngle  
+def setLaserTarget(app, mouseX, mouseY):
+
+    deltaX = mouseX - app.charX
+    deltaY = mouseY - app.charY
+
+    deltaY = -deltaY
+
+    app.lasers1.targetCoords = [mouseX, mouseY]
+
+    hypotenuse = pythagoreanTheorem(deltaX, deltaY)
+
+    app.targetDistance = hypotenuse
+
+    #make sure no crash
+    if hypotenuse == 0:
+        pass
+    elif deltaX >= 0:
+        app.lasers1.targetAngle = math.asin(deltaY/hypotenuse)
+    else:
+        app.lasers1.targetAngle = math.pi - math.asin(deltaY/hypotenuse)
 
 #=======================================
 #onStep
@@ -785,6 +815,9 @@ def onStep(app):
                     setBossPathfindingMovement(app)
             else:
                 bossPathfindingMovement(app)
+
+            if app.time % 8 == 0:
+                bossAttack(app)
 
             findBossNode(app)
 
@@ -884,8 +917,6 @@ def bossMove(app):
             app.boss1.x += graphicsHorizontalMovement
             app.boss1.y += graphicsVerticalMovement
             
-            if app.time % 8 == 0:
-                bossAttack(app)
 
 #checks if boss is in range to do a melee attack 
 def bossAttack(app):
@@ -1292,7 +1323,7 @@ def pathfindingMovement(app):
     x = app.width/2 - app.backroundWidth/2 - app.frameshiftX + xDistanceFromGridTopLeft
     y = app.gameHeight/2 - app.backroundHeight/2 - app.frameshiftY + yDistanceFromGridTopLeft
 
-    setTarget(app, x, y)
+    setMoveTarget(app, x, y)
     setMoveTo(app)
 
 #removes the next node to move to from the list and sets the coords for the boss to move to
@@ -1348,8 +1379,6 @@ def bossPathfindingMovement(app):
             app.boss1.x, app.boss1.y = app.boss1.targetX + app.frameshiftX, app.boss1.targetY + app.frameshiftY
             app.boss1.isMoving = False
         
-        if app.time % 8 == 0:
-                bossAttack(app)
 
 #===============================================================================================
 ##charaterUpgrades
