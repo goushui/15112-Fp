@@ -6,15 +6,11 @@ import random
 
 
 """
-Why is my game laggy?
-
 to do
 -make randomly generted map
 -add images for the upgrades
 -cooldown
 -more upgrades
-
-
 
 Citations:
 - character GIF is my drawing based off the League of Leagends chracter Teemo
@@ -233,10 +229,13 @@ def onAppStart(app):
 #resets the game
 def reset(app):
 
+    #startScreen
+    startScreenControl(app)
+
     #game Variables
     if True:
         app.time = 0
-        app.situation = 0
+        app.situation = 4
 
     #character variables
     if True:
@@ -456,36 +455,42 @@ def makeBossStronger(app):
 #==============================================================================
 
 def redrawAll(app):
+        
+    if app.situation == 4:
+        startScreen(app)
+    else:
 
-    drawMap(app)
+        drawMap(app)
 
-    drawGrid(app)
+        drawGrid(app)
 
-    if app.charHealth:
-        drawCharacter(app)
+        if app.charHealth:
+            drawCharacter(app)
 
-    if app.boss1.health:
-        drawBoss(app)
-        drawBossHealthbar(app)
-        drawPointerTarget(app)
+        if app.boss1.health:
+            drawBoss(app)
+            drawBossHealthbar(app)
+            if False:
+                drawPointerTarget(app)
 
-    if app.lasers1.lasers:
-        drawLasers(app)
+        if app.lasers1.lasers:
+            drawLasers(app)
 
-    #game over screen
-    if app.situation == 1:
-        drawEnding1(app)
+        #game over screen
+        if app.situation == 1:
+            drawEnding1(app)
 
-    #characterUpgrades
-    elif app.situation == 2:
-        drawUpgradeSelector(app)
+        #characterUpgrades
+        elif app.situation == 2:
+            drawUpgradeSelector(app)
 
-    #pause screen
-    elif app.situation == 3:
-        pauseScreen(app)
-    
-    drawBotBar(app)
-    drawCharacterHealthbar(app)
+        #pause screen
+        elif app.situation == 3:
+            pauseScreen(app)
+        
+        drawBotBar(app)
+        drawScore(app)
+        drawCharacterHealthbar(app)
 
 #==========================================================================
 #DRAWING HELPER FUNTIONS
@@ -502,17 +507,22 @@ def drawMap(app):
 def drawBotBar(app):
     drawRect(0, app.gameHeight, app.width, app.height - app.gameHeight, fill = 'black', opacity = 100)
 
+#draw scorboard
+def drawScore(app):
+    drawLabel(f"Score = {app.kills}", app.width * 7/8, app.height - (app.height - app.gameHeight)/2, size = 60, fill = "pink")
+
+
 #ENDING 1 SCREEN
 def drawEnding1(app):
     drawRect(0, 0, app.width, app.height, fill = 'black', opacity = 40)
-    drawLabel('GAME OVER', app.width/2, app.height/2-130, size = 40, bold = True, fill = "cyan")
-    drawLabel(f'SCORE: {app.kills}', app.width/2, app.height/2-70, size = 40, bold = True, fill = "cyan")
-    drawLabel('PRESS L TO RESTART', app.width/2, app.height/2-10, size = 40, bold = True, fill = "cyan")
+    drawLabel('GAME OVER', app.width/2, app.height/2-130, size = 40, bold = True, fill = "pink")
+    drawLabel(f'SCORE: {app.kills}', app.width/2, app.height/2-70, size = 40, bold = True, fill = "pink")
+    drawLabel('PRESS L TO RESTART', app.width/2, app.height/2-10, size = 40, bold = True, fill = "pink")
 
 #PAUSE SCREEN
 def pauseScreen(app):
     drawRect(0, 0, app.width, app.height, fill = 'black', opacity = 40)
-    drawLabel('GAME IS PAUSED', app.width/2, app.height/2-100, size = 40, bold = True)
+    drawLabel('GAME IS PAUSED', app.width/2, app.height/2-100, size = 80, bold = True, fill = "pink")
 
 #DRAWS CHRACTER
 def drawCharacter(app):
@@ -536,7 +546,7 @@ def drawCharacterHealthbar(app):
     startX = leftMargin
     
     if rectWidth > 0:
-        drawRect(startX, app.height-botMargin - 15, rectWidth, 30, fill = "green")
+        drawRect(startX, app.height-botMargin - 15, rectWidth, 30, fill = "lightgreen")
         
     drawLabel(f'{app.charHealth} / {app.charTotalHealth}', leftMargin+healthBarSize/2, app.height-botMargin, size = 20)
     
@@ -614,6 +624,7 @@ def onKeyPress(app, key):
     elif app.situation == 3:
         app.situation = 0
 
+
 #stops the chracter form moving
 def stopMoving(app):
     app.moveToCoords = [app.width/2, app.gameHeight/2]
@@ -639,6 +650,11 @@ def onMousePress(app, mouseX, mouseY, button):
     elif app.situation == 2:
         if button == 0:
             selectUpgrade(app, mouseX, mouseY)
+
+    #startScreen
+    elif app.situation == 4:
+        if mousePressStartButton(app, mouseX, mouseY):
+            app.situation = 0
 
 #called by onMousePress returns
 def findTargetNode(app, targetX, targetY):
@@ -697,6 +713,13 @@ def onMouseMove(app, mouseX, mouseY):
     elif app.situation == 2:
         checkIfHoverOverUpgrade(app, mouseX, mouseY)
 
+    #startScreen
+    elif app.situation == 4:
+        if hoverOverMousePressStartButton(app, mouseX, mouseY):
+            app.startButtonHighlighted = True
+        else:
+            app.startButtonHighlighted = False
+
 #finds the angle that the mouse is facing
 #assigns the target coordinates of the mouse
 #sets app.targetCoords, app.targetDistance, app.character1.targetAngle  
@@ -726,7 +749,9 @@ def setTarget(app, mouseX, mouseY):
 #=======================================     
 def onStep(app):
 
-    if app.situation == 1:
+    if app.situation == 4:
+        pass
+    elif app.situation == 1:
         pass
     elif app.situation == 2:
         pass
@@ -859,7 +884,8 @@ def bossMove(app):
             app.boss1.x += graphicsHorizontalMovement
             app.boss1.y += graphicsVerticalMovement
             
-            bossAttack(app)
+            if app.time % 8 == 0:
+                bossAttack(app)
 
 #checks if boss is in range to do a melee attack 
 def bossAttack(app):
@@ -964,40 +990,118 @@ def generateWalls(app):
     rows = len(app.matrix)
     cols = len(app.matrix[0])
 
-    c = 0
-    for r in range(rows):
-        app.matrix[r][c].traversable = False
-        app.matrix[r][c].color = "black"
-        app.matrix[r][c].baseColor = "black"
-        app.walls.add(app.matrix[r][c])
+    #boarder
+    if True:
+        c = 0
+        for r in range(rows):
+            app.matrix[r][c].traversable = False
+            app.matrix[r][c].color = "black"
+            app.matrix[r][c].baseColor = "black"
+            app.walls.add(app.matrix[r][c])
 
-    c = cols-1
-    for r in range(rows):
-        app.matrix[r][c].traversable = False
-        app.matrix[r][c].color = "black"
-        app.matrix[r][c].baseColor = "black"
-        app.walls.add(app.matrix[r][c])
+        c = cols-1
+        for r in range(rows):
+            app.matrix[r][c].traversable = False
+            app.matrix[r][c].color = "black"
+            app.matrix[r][c].baseColor = "black"
+            app.walls.add(app.matrix[r][c])
 
-    r = 0
-    for c in range(cols):
-        app.matrix[r][c].traversable = False
-        app.matrix[r][c].color = "black"
-        app.matrix[r][c].baseColor = "black"
-        app.walls.add(app.matrix[r][c])
+        r = 0
+        for c in range(cols):
+            app.matrix[r][c].traversable = False
+            app.matrix[r][c].color = "black"
+            app.matrix[r][c].baseColor = "black"
+            app.walls.add(app.matrix[r][c])
 
-    r = rows - 1
-    for c in range(cols):
-        app.matrix[r][c].traversable = False
-        app.matrix[r][c].color = "black"
-        app.matrix[r][c].baseColor = "black"
-        app.walls.add(app.matrix[r][c])
+        r = rows - 1
+        for c in range(cols):
+            app.matrix[r][c].traversable = False
+            app.matrix[r][c].color = "black"
+            app.matrix[r][c].baseColor = "black"
+            app.walls.add(app.matrix[r][c])
 
-    r = 6
-    for c in range(2, 7):
-        app.matrix[r][c].traversable = False
-        app.matrix[r][c].color = "black"
-        app.matrix[r][c].baseColor = "black"
-        app.walls.add(app.matrix[r][c])
+    #obsticals horizontal
+    if True:
+
+        r = 3
+        for c in range(3, 7):
+            app.matrix[r][c].traversable = False
+            app.matrix[r][c].color = "black"
+            app.matrix[r][c].baseColor = "black"
+            app.walls.add(app.matrix[r][c])
+
+        r = 4
+        for c in range(9, 17):
+            app.matrix[r][c].traversable = False
+            app.matrix[r][c].color = "black"
+            app.matrix[r][c].baseColor = "black"
+            app.walls.add(app.matrix[r][c])
+
+        r = 6
+        for c in range(4, 7):
+            app.matrix[r][c].traversable = False
+            app.matrix[r][c].color = "black"
+            app.matrix[r][c].baseColor = "black"
+            app.walls.add(app.matrix[r][c])
+
+        r = 7
+        for c in range(8, 17):
+            app.matrix[r][c].traversable = False
+            app.matrix[r][c].color = "black"
+            app.matrix[r][c].baseColor = "black"
+            app.walls.add(app.matrix[r][c])
+
+        r = 10
+        for c in range(1, 5):
+            app.matrix[r][c].traversable = False
+            app.matrix[r][c].color = "black"
+            app.matrix[r][c].baseColor = "black"
+            app.walls.add(app.matrix[r][c])
+
+        r = 11
+        for c in range(7, 12):
+            app.matrix[r][c].traversable = False
+            app.matrix[r][c].color = "black"
+            app.matrix[r][c].baseColor = "black"
+            app.walls.add(app.matrix[r][c])
+
+        r = 11
+        for c in range(14, 19):
+            app.matrix[r][c].traversable = False
+            app.matrix[r][c].color = "black"
+            app.matrix[r][c].baseColor = "black"
+            app.walls.add(app.matrix[r][c])
+
+        r = 15
+        for c in range(3, 8):
+            app.matrix[r][c].traversable = False
+            app.matrix[r][c].color = "black"
+            app.matrix[r][c].baseColor = "black"
+            app.walls.add(app.matrix[r][c])
+
+    #obsticals vertical
+
+
+        c = 7
+        for r in range(6, 16):
+            app.matrix[r][c].traversable = False
+            app.matrix[r][c].color = "black"
+            app.matrix[r][c].baseColor = "black"
+            app.walls.add(app.matrix[r][c])
+
+        c = 11
+        for r in range(15, 19):
+            app.matrix[r][c].traversable = False
+            app.matrix[r][c].color = "black"
+            app.matrix[r][c].baseColor = "black"
+            app.walls.add(app.matrix[r][c])
+
+        c = 16
+        for r in range(15, 19):
+            app.matrix[r][c].traversable = False
+            app.matrix[r][c].color = "black"
+            app.matrix[r][c].baseColor = "black"
+            app.walls.add(app.matrix[r][c])
 
 #===============================================================================================
 #pathfinding
@@ -1037,14 +1141,14 @@ def drawGrid(app):
         for k in range(app.numBlocksWide):
     
             #sets the color of the node
-            color = app.matrix[j][k].color
+            color = app.matrix[j][k].baseColor
 
             if app.charPath:
                 for node in app.charPath:
                     if (k, j) == (node.x, node.y):
                         color = "white"
 
-            drawRect(x - app.frameshiftX, y - app.frameshiftY, app.nodeWidth, app.nodeHeight, border = "black", fill = color, opacity = 30)
+            drawRect(x - app.frameshiftX, y - app.frameshiftY, app.nodeWidth, app.nodeHeight, border = "black", fill = color, opacity = 50)
             x += app.nodeWidth
 
         y += app.nodeHeight
@@ -1054,12 +1158,6 @@ def drawGrid(app):
 #=======================================
 #returns a tuple of the coordinates that the chracter is in
 def findCharNode(app):
-
-    # x = app.frameshiftX + app.backroundWidth/2
-    # y = app.frameshiftY + app.backroundHeight/2
-
-    # col = int(x // app.nodeWidth)
-    # row = int(y // app.nodeHeight)
 
     col, row = findTargetNode(app, app.width/2, app.gameHeight/2)
 
@@ -1077,12 +1175,6 @@ def findCharNode(app):
 
 #sets the coordinates that the boss is in
 def findBossNode(app):
-
-    # x = app.boss1.x + app.backroundWidth/2 - app.width/2
-    # y = app.boss1.y + app.backroundHeight/2 - app.gameHeight/2
-
-    # col = int(x // app.nodeWidth)
-    # row = int(y // app.nodeHeight)
 
     col, row = findTargetNode(app, app.boss1.x -  app.frameshiftX, app.boss1.y - app.frameshiftY)
 
@@ -1256,7 +1348,8 @@ def bossPathfindingMovement(app):
             app.boss1.x, app.boss1.y = app.boss1.targetX + app.frameshiftX, app.boss1.targetY + app.frameshiftY
             app.boss1.isMoving = False
         
-        bossAttack(app)
+        if app.time % 8 == 0:
+                bossAttack(app)
 
 #===============================================================================================
 ##charaterUpgrades
@@ -1360,6 +1453,62 @@ def getNumUpgradesLeft(app):
     if counter >= 4:
         return True
     return False
+
+#===============================================================================================
+##startScreen
+#===============================================================================================
+
+#startScreen - draw
+def startScreen(app):
+
+    drawRect(0, 0, app.width, app.height, fill = "lightgreen")
+
+    #title
+    drawLabel("TENKO SURVIVOR", app. width/2, app.height * 2/12, size = 120)
+
+    drawLabel("SURVIVE FOR AS LONG AS YOU CAN", app. width/2, app.height * 4/12, size = 60)
+    drawLabel("RIGHT CLICK TO MOVE", app. width/2, app.height * 5/12, size = 60)
+    drawLabel("PRESS Q TO SHOOT LASERS", app. width/2, app.height * 6/12, size = 60)
+    drawLabel("KILLING BOSSES INCREASES YOUR SCORE", app. width/2, app.height * 7/12, size = 60)
+
+    #button
+    if app.startButtonHighlighted:
+        boarder = 30
+        drawRect(app.startButton[0], app.startButton[1], app.startButton[2] + boarder, app.startButton[3] + boarder, align = "center", fill = "cyan")
+
+    drawRect(app.startButton[0], app.startButton[1], app.startButton[2], app.startButton[3], align = "center", fill = "pink", border = "black")
+    drawLabel("START", app.startButton[0], app.startButton[1], size = 60)
+
+def startScreenControl(app):
+
+    app.startButton = [app.width/2, app.height * 4/5, 400, 200]
+    app.startButtonHighlighted = False
+
+#checks if the mouse clicks on the start button
+def mousePressStartButton(app, x, y):
+
+    centerX = app.startButton[0]
+    centerY = app.startButton[1]
+    height = app.startButton[3]
+    width = app.startButton[2]
+    
+    if inRect(app, centerX, centerY, height, width, x, y):
+        return True
+    else:
+        return False
+    
+#checks if the mouse is hovering over the start button
+def hoverOverMousePressStartButton(app, x, y):
+
+    centerX = app.startButton[0]
+    centerY = app.startButton[1]
+    height = app.startButton[3]
+    width = app.startButton[2]
+    
+    if inRect(app, centerX, centerY, height, width, x, y):
+        return True
+    else:
+        return False
 
 #=======================================
 #MAIN
