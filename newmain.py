@@ -881,11 +881,12 @@ def animateChar(app):
         app.bossSpriteCounter2 = (app.bossSpriteCounter2 + 1) % len(app.bossSpriteList2)
 
 #moves the boss towards the character onStep
-#not in use
+#!!!!!!THIS CODE IS NOT BEING USED!!!!!!!!
 def bossMove(app):
     
     if app.boss1.health:
 
+        #calculates the angle that the boss is moving
         x = app.boss1.x - app.frameshiftX
         y = app.boss1.y - app.frameshiftY
     
@@ -905,8 +906,9 @@ def bossMove(app):
             else:
                 app.boss1.targetAngle = math.pi - math.asin(deltaY/hypotenuse)
             
-            graphicsHorizontalMovement = deltaX/hypotenuse * app.boss1.speed
-            graphicsVerticalMovement = -(deltaY/hypotenuse * app.boss1.speed)
+            #calculates the dx and dy
+            graphicsDX = deltaX/hypotenuse * app.boss1.speed
+            graphicsDY = -(deltaY/hypotenuse * app.boss1.speed)
 
             #chracterUpgrades - freezing lasers
             if app.freezingLazers1.bossFreezeCD > 0:
@@ -914,8 +916,8 @@ def bossMove(app):
                 bossYVelocity *= app.freezingLazers1.bossSpeedMultiplier
 
             #move Boss
-            app.boss1.x += graphicsHorizontalMovement
-            app.boss1.y += graphicsVerticalMovement
+            app.boss1.x += graphicsDX
+            app.boss1.y += graphicsDY
             
 
 #checks if boss is in range to do a melee attack 
@@ -951,6 +953,7 @@ def checkBossDead(app):
 def moveLasers(app):
 
     i = 0
+    #loops through lasers
     while i < len(app.lasers1.lasers):
 
         app.lasers1.lasers[i][0] += math.cos(app.lasers1.lasers[i][2]) * app.lasers1.speed
@@ -1156,6 +1159,7 @@ def generateGrid(app):
 
         app.charPath = []
 
+    #loops thorugh and makes 2D grid
     for j in range(app.numBlocksHigh):
         app.matrix.append([])
         for k in range(app.numBlocksWide):
@@ -1167,6 +1171,7 @@ def drawGrid(app):
     setX = app.width/2 - app.backroundWidth/2
     y = app.gameHeight/2 - app.backroundHeight/2
 
+    #loops through 2D list
     for j in range(app.numBlocksHigh):
         x = setX
         for k in range(app.numBlocksWide):
@@ -1174,11 +1179,13 @@ def drawGrid(app):
             #sets the color of the node
             color = app.matrix[j][k].baseColor
 
+            #makes color of pathfinding white
             if app.charPath:
                 for node in app.charPath:
                     if (k, j) == (node.x, node.y):
                         color = "white"
 
+            #draws the square
             drawRect(x - app.frameshiftX, y - app.frameshiftY, app.nodeWidth, app.nodeHeight, border = "black", fill = color, opacity = 50)
             x += app.nodeWidth
 
@@ -1314,6 +1321,7 @@ def getPath(app, begin, cur):
 
 #removes the next node to move to from the list and sets moveToThere
 def pathfindingMovement(app):
+    #gets the x and y variables relative to the window
 
     cur = app.charPath.pop()
 
@@ -1336,7 +1344,7 @@ def setBossPathfindingMovement(app):
 #moves the boss
 def bossPathfindingMovement(app):
 
-    #finds the angle that the boss is movinf
+    #finds the angle that the boss is moving
     xDistanceFromGridTopLeft = app.boss1.targetGridX * app.nodeWidth + app.nodeWidth/2
     yDistanceFromGridTopLeft = app.boss1.targetGridY * app.nodeHeight + app.nodeHeight/2
 
@@ -1400,6 +1408,7 @@ def drawUpgradeSelector(app):
     app.upgradeBoxes1.gapWidth = gapWidth
     app.upgradeBoxes1.startX = startX
 
+    #loops through 4 upgrade box locations and draws them
     for i in range(4):
 
         x = startX + i * (gapWidth + rectWidth)
@@ -1440,15 +1449,10 @@ def checkIfHoverOverUpgrade(app, mouseX, mouseY):
 
     app.upgradeBoxes1.highlighted = i
 
-#returns the index of the box you are hovering over
+#returns the index of the box the mouse is in
 def findBoxOfMouse(app, mouseX, mouseY):
 
-    rectWidth = app.upgradeBoxes1.rectWidth
-    rectHeight = app.upgradeBoxes1.rectHeight
-    gapWidth = app.upgradeBoxes1.gapWidth
-    startX = app.upgradeBoxes1.startX
-
-    inBox = False
+    #loops through all of the boxes and checks if the mouse is in the box
     for i in range(4):
         
         x = app.upgradeBoxes1.startX + i * (app.upgradeBoxes1.gapWidth + app.upgradeBoxes1.rectWidth)
@@ -1457,14 +1461,15 @@ def findBoxOfMouse(app, mouseX, mouseY):
         
     return None
 
+#reset and generates the 4 upgrades that will be selected
 def get4Upgrades(app):
-    #reset and generates the 4 upgrades that will be selected
 
     numberOfUpgrades = len(app.charUpgrades1.list)-1
     index = random.randint(1, numberOfUpgrades)
     usedIndexes = set()
 
     counter = 0
+    #appends upgrades to app.charUpgrades1.fourUpgrades unitl there are 4
     while counter < 4:
         if app.charUpgrades1.list[index] == False and index not in usedIndexes:
             app.charUpgrades1.fourUpgrades.append(app.charUpgrades1.Objects[index])
