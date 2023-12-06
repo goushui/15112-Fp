@@ -312,15 +312,15 @@ def generateImagesAndGifs(app):
 
     #map
     if True:
-        # Open image from local directory
-        app.backround = Image.open('images/grass.gif')
 
         #makes the size of the backround
         app.backroundWidth = 1000
         app.backroundHeight = 1000
         app.nodeSize = 50
-        app.backround = app.backround.resize((app.backroundWidth, app.backroundHeight))
 
+        # Open image from local directory
+        app.backround = Image.open('images/grass.gif')
+        app.backround = app.backround.resize((app.backroundWidth, app.backroundHeight))
         # Cast image type to CMUImage to allow for faster drawing
         app.backround = CMUImage(app.backround)
 
