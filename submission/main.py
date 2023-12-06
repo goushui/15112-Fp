@@ -1186,7 +1186,7 @@ def drawGrid(app):
                         color = "white"
 
             #draws the square
-            drawRect(x - app.frameshiftX, y - app.frameshiftY, app.nodeWidth, app.nodeHeight, border = "black", fill = color, opacity = 50)
+            drawRect(x - app.frameshiftX, y - app.frameshiftY, app.nodeWidth, app.nodeHeight, border = "black", fill = color, opacity = 40)
             x += app.nodeWidth
 
         y += app.nodeHeight
