@@ -15,8 +15,9 @@ to do
 Citations:
 - character GIF is my drawing based off the League of Leagends chracter Teemo
 - boss GIF is my drawing based off the League of Leagends chracter Garen
-- game idea from Vampire Survivors
-- framseshift got the idea of moving all the things on the screen from 2022 page
+- game idea from Vampire Survivors and Leahgue of Legends
+- framseshift got the idea of moving all the things on the screen from 15112 2022 page
+- load backround image from 15112 2022 page
 - Gif animation code from F23_demos 11/21 Lecture
 - map backround code from F23_demos 11/21 Lecture
 - pathfinding algorithm from https://www.youtube.com/watch?v=-L-WgKMFuhE&t=405s used pseudocode
